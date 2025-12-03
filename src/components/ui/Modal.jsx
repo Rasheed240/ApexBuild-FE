@@ -51,8 +51,13 @@ export const Modal = ({
     }
   };
 
+  const titleId = `modal-title-${Math.random().toString(36).slice(2, 9)}`;
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleOverlayClick}
     >
@@ -65,11 +70,12 @@ export const Modal = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 id={titleId} className="text-xl font-semibold text-gray-900 dark:text-white">
             {title}
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
