@@ -2,7 +2,7 @@ import { cn } from '../../utils/cn';
 import { forwardRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-export const Input = forwardRef(({ label, error, className, type = 'text', showPasswordToggle = false, leftIcon: LeftIcon, ...props }, ref) => {
+export const Input = forwardRef(({ label, error, helperText, success, className, type = 'text', showPasswordToggle = false, leftIcon: LeftIcon, ...props }, ref) => {
   const [showPassword, setShowPassword] = useState(false);
   const inputType = showPasswordToggle ? (showPassword ? 'text' : 'password') : type;
 
@@ -28,6 +28,8 @@ export const Input = forwardRef(({ label, error, className, type = 'text', showP
             LeftIcon && 'pl-10',
             error
               ? 'border-red-300 bg-red-50 dark:bg-red-900/20 focus:ring-red-500'
+              : success
+              ? 'border-green-400 dark:border-green-500 focus:ring-green-500'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 focus:border-primary-500',
             showPasswordToggle && 'pr-11',
             className
@@ -55,6 +57,9 @@ export const Input = forwardRef(({ label, error, className, type = 'text', showP
           <span className="text-red-500 dark:text-red-400">•</span>
           {error}
         </p>
+      )}
+      {!error && helperText && (
+        <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{helperText}</p>
       )}
     </div>
   );
