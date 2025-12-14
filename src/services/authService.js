@@ -1,5 +1,16 @@
 import api from './api';
 
+const SESSION_KEYS = {
+  ACCESS_TOKEN: 'accessToken',
+  REFRESH_TOKEN: 'refreshToken',
+  USER: 'user',
+  TOKEN_EXPIRES_AT: 'tokenExpiresAt',
+};
+
+const clearAuthData = () => {
+  Object.values(SESSION_KEYS).forEach((key) => localStorage.removeItem(key));
+};
+
 export const authService = {
   // Register
   register: async (data) => {
@@ -13,10 +24,10 @@ export const authService = {
     const { accessToken, refreshToken, user, expiresAt } = response.data.data;
     
     // Store tokens and user data
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('tokenExpiresAt', expiresAt);
+    localStorage.setItem(SESSION_KEYS.ACCESS_TOKEN, accessToken);
+    localStorage.setItem(SESSION_KEYS.REFRESH_TOKEN, refreshToken);
+    localStorage.setItem(SESSION_KEYS.USER, JSON.stringify(user));
+    localStorage.setItem(SESSION_KEYS.TOKEN_EXPIRES_AT, expiresAt);
     
     return response.data;
   },
@@ -28,10 +39,7 @@ export const authService = {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('tokenExpiresAt');
+      clearAuthData();
     }
   },
 
@@ -77,14 +85,12 @@ export const authService = {
 
   // Check if user is authenticated
   isAuthenticated: () => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem(SESSION_KEYS.ACCESS_TOKEN);
     if (!token) return false;
 
-    const expiresAt = localStorage.getItem('tokenExpiresAt');
+    const expiresAt = localStorage.getItem(SESSION_KEYS.TOKEN_EXPIRES_AT);
     if (expiresAt && new Date(expiresAt) < new Date()) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      clearAuthData();
       return false;
     }
 
@@ -93,9 +99,18 @@ export const authService = {
 
   // Get stored user data
   getStoredUser: () => {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem(SESSION_KEYS.USER);
     return userStr ? JSON.parse(userStr) : null;
   },
+
+  // Get token expiry date
+  getTokenExpiry: () => {
+    const expiresAt = localStorage.getItem(SESSION_KEYS.TOKEN_EXPIRES_AT);
+    return expiresAt ? new Date(expiresAt) : null;
+  },
+
+  // Clear all auth data (for logout or expiry)
+  clearAuthData,
 
   // 2FA - Enable
   enable2FA: async (password) => {
