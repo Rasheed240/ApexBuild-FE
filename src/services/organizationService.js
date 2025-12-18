@@ -57,5 +57,23 @@ export const organizationService = {
     const response = await api.delete(`/organizations/${organizationId}/members/${userId}`);
     return unwrap(response);
   },
+
+  // Update member role
+  updateMemberRole: async (organizationId, userId, role) => {
+    const response = await api.put(`/organizations/${organizationId}/members/${userId}/role`, { role });
+    return unwrap(response);
+  },
+
+  // Get pending invitations for an organization
+  getInvitations: async (organizationId, params = {}) => {
+    const response = await api.get(`/organizations/${organizationId}/invitations`, { params });
+    return unwrap(response);
+  },
+
+  // Accept an invitation
+  acceptInvitation: async (token) => {
+    const response = await api.post('/organizations/invitations/accept', { token });
+    return unwrap(response);
+  },
 };
 
