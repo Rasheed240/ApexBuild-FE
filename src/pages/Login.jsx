@@ -85,21 +85,10 @@ export const Login = () => {
           backgroundImage: 'linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)',
           backgroundSize: '48px 48px',
         }} />
-        {/* Decorative rings */}
-        <div className="absolute top-20 right-12 w-72 h-72 border border-primary-500/10 rounded-full" />
-        <div className="absolute top-28 right-20 w-56 h-56 border border-blue-500/8 rounded-full" />
-        <div className="absolute bottom-24 left-4 w-96 h-96 border border-indigo-500/6 rounded-full" />
-        <div className="absolute -bottom-20 right-1/3 w-80 h-80 border border-primary-500/6 rounded-full" />
 
         {/* Logo */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-1.5">
-            <div className="p-2.5 bg-gradient-to-br from-primary-500 to-blue-600 rounded-xl shadow-lg shadow-primary-500/30">
-              <Building2 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-black text-white tracking-tight">ApexBuild</span>
-          </div>
-          <p className="text-[10px] text-slate-500 font-semibold tracking-[0.2em] uppercase ml-0.5">Construction Management Platform</p>
+          <img src="/apexbuild-image.png" alt="ApexBuild" className="w-64 object-contain" />
         </div>
 
         {/* Hero */}
@@ -147,11 +136,10 @@ export const Login = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-primary-600/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Mobile logo */}
-        <div className="absolute top-7 left-7 flex items-center gap-2.5 lg:hidden z-10">
-          <div className="p-2 bg-gradient-to-br from-primary-500 to-blue-600 rounded-lg">
-            <Building2 className="h-5 w-5 text-white" />
+        <div className="absolute top-5 left-5 lg:hidden z-10">
+          <div className="inline-block bg-slate-900 rounded-xl px-3 py-2 shadow-lg">
+            <img src="/apexbuild-image.png" alt="ApexBuild" className="h-9 object-contain" />
           </div>
-          <span className="text-base font-black text-gray-900 dark:text-white">ApexBuild</span>
         </div>
 
         {/* Theme toggle */}

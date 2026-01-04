@@ -51,9 +51,7 @@ export const ForgotPassword = () => {
       <Card className="animate-fade-in shadow-xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary-100 rounded-full">
-              <Building2 className="h-8 w-8 text-primary-600" />
-            </div>
+            <img src="/apexbuild-logo.png" alt="ApexBuild" className="h-16 w-16 object-contain rounded-2xl shadow" />
           </div>
           <CardTitle>Reset your password</CardTitle>
           <CardDescription>

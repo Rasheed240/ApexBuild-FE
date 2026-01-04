@@ -134,26 +134,20 @@ export const Register = () => {
   return (
     <div className="min-h-screen flex bg-white dark:bg-slate-950">
       {/* ── Left brand strip ─────────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[340px] xl:w-[380px] relative overflow-hidden flex-col justify-between p-10 flex-shrink-0">
+      <div className="hidden lg:flex lg:w-[340px] xl:w-[380px] relative overflow-hidden flex-col p-10 flex-shrink-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0f1629] to-slate-950" />
         <div className="absolute inset-0 opacity-[0.035]" style={{
           backgroundImage: 'linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
         <div className="absolute inset-0" style={{backgroundImage:'radial-gradient(ellipse at 20% 40%, rgba(99,102,241,0.12) 0%, transparent 60%)'}} />
-        <div className="absolute top-16 right-8 w-48 h-48 border border-primary-500/8 rounded-full" />
-        <div className="absolute bottom-20 left-2 w-64 h-64 border border-blue-500/6 rounded-full" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="p-2 bg-gradient-to-br from-primary-500 to-blue-600 rounded-xl shadow-lg shadow-primary-500/30">
-              <Building2 className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-black text-white tracking-tight">ApexBuild</span>
-          </div>
-          <p className="text-[9px] text-slate-500 font-semibold tracking-[0.2em] uppercase">Construction Management</p>
+        {/* Logo */}
+        <div className="relative z-10 mb-10">
+          <img src="/apexbuild-image.png" alt="ApexBuild" className="w-52 object-contain" />
         </div>
 
+        {/* Hero + checklist */}
         <div className="relative z-10 space-y-6">
           <div>
             <h2 className="text-3xl font-black text-white leading-tight mb-3">
@@ -182,11 +176,14 @@ export const Register = () => {
           </div>
         </div>
 
-        <div className="relative z-10 p-4 bg-slate-800/40 border border-slate-700/40 rounded-xl">
-          <p className="text-xs text-slate-400 italic leading-relaxed">
-            "ApexBuild transformed how we coordinate 200+ workers across 12 simultaneous sites."
-          </p>
-          <p className="text-xs text-slate-500 font-semibold mt-2">— James O., Managing Director</p>
+        {/* Quote */}
+        <div className="relative z-10 mt-auto pt-8">
+          <div className="p-4 bg-slate-800/40 border border-slate-700/40 rounded-xl">
+            <p className="text-xs text-slate-400 italic leading-relaxed">
+              "ApexBuild transformed how we coordinate 200+ workers across 12 simultaneous sites."
+            </p>
+            <p className="text-xs text-slate-500 font-semibold mt-2">— Rasheed Babatunde, Managing Director</p>
+          </div>
         </div>
       </div>
 
@@ -195,11 +192,10 @@ export const Register = () => {
         <div className="min-h-full flex flex-col">
           {/* Top bar */}
           <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
-            <div className="flex items-center gap-2.5 lg:hidden">
-              <div className="p-1.5 bg-gradient-to-br from-primary-500 to-blue-600 rounded-lg">
-                <Building2 className="h-4 w-4 text-white" />
+            <div className="lg:hidden">
+              <div className="inline-block bg-slate-900 rounded-xl px-3 py-2 shadow-lg">
+                <img src="/apexbuild-image.png" alt="ApexBuild" className="h-8 object-contain" />
               </div>
-              <span className="text-base font-black text-gray-900 dark:text-white">ApexBuild</span>
             </div>
             <div className="lg:ml-auto flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
               Already have an account?
