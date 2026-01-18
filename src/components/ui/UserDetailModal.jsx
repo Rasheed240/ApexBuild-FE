@@ -48,7 +48,7 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-export function UserDetailModal({ userId, onClose }) {
+export function UserDetailModal({ userId, onClose, organizationId, projectId }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,11 +56,14 @@ export function UserDetailModal({ userId, onClose }) {
     if (!userId) return;
     setLoading(true);
     setProfile(null);
-    api.get(`/users/${userId}`)
+    const params = {};
+    if (projectId) params.projectId = projectId;
+    else if (organizationId) params.organizationId = organizationId;
+    api.get(`/users/${userId}`, { params })
       .then(res => setProfile(res.data?.data || res.data))
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, organizationId, projectId]);
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -98,6 +101,21 @@ export function UserDetailModal({ userId, onClose }) {
           </button>
         </div>
 
+        {/* Avatar + status — outside the scroll area so overflow-y-auto never clips it */}
+        {profile && (
+          <div className="px-6 flex items-end justify-between flex-shrink-0 relative z-10" style={{ marginTop: '-3rem' }}>
+            <ProfilePicture
+              src={profile.profileImageUrl}
+              alt={profile.fullName}
+              size="lg"
+              className="shadow-xl flex-shrink-0"
+            />
+            <span className={`mb-1 px-3 py-1 rounded-full text-xs font-bold border ${STATUS_COLORS[statusLabel] || STATUS_COLORS.Inactive}`}>
+              {statusLabel.toUpperCase()}
+            </span>
+          </div>
+        )}
+
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1">
           {loading ? (
@@ -110,20 +128,7 @@ export function UserDetailModal({ userId, onClose }) {
               <p>Unable to load profile</p>
             </div>
           ) : (
-            <div className="px-6 pb-6">
-              {/* Avatar row — overlaps banner */}
-              <div className="flex items-end justify-between -mt-10 mb-4">
-                <ProfilePicture
-                  src={profile.profileImageUrl}
-                  alt={profile.fullName}
-                  size="lg"
-                  className="shadow-xl flex-shrink-0"
-                />
-                <span className={`mb-1 px-3 py-1 rounded-full text-xs font-bold border ${STATUS_COLORS[statusLabel] || STATUS_COLORS.Inactive}`}>
-                  {statusLabel.toUpperCase()}
-                </span>
-              </div>
-
+            <div className="px-6 pb-6 pt-3">
               {/* Name + gender */}
               <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{profile.fullName}</h2>
               {profile.gender && (
@@ -142,7 +147,8 @@ export function UserDetailModal({ userId, onClose }) {
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {profile.roles.map((r, i) => {
                     const roleName = ROLE_TYPE_LABELS[r.roleType] ?? String(r.roleType);
-                    const context  = r.projectName ? ` · ${r.projectName}` : r.organizationName ? ` · ${r.organizationName}` : '';
+                    const parts = [r.organizationName, r.projectName].filter(Boolean);
+                    const context = parts.length ? ` · ${parts.join(' › ')}` : '';
                     return (
                       <span key={i} className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[roleName] || ROLE_COLORS.FieldWorker}`}>
                         {roleName}{context}

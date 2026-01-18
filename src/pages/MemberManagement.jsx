@@ -32,20 +32,22 @@ export const MemberManagement = () => {
     const [success, setSuccess] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterActive, setFilterActive] = useState(null);
+    const [roleFilter, setRoleFilter] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [removing, setRemoving] = useState(false);
 
+    const isSuperAdmin = user?.role === 'SuperAdmin' || user?.roles?.includes('SuperAdmin');
     const canDeleteMember = selectedOrganization && user && (
         user.id === selectedOrganization.ownerId ||
-        user.role === 'SuperAdmin' ||
-        user.roles?.includes('SuperAdmin')
+        isSuperAdmin
     );
 
     // Reset search + reload when org changes
     useEffect(() => {
         setSearchTerm('');
         setFilterActive(null);
+        setRoleFilter('');
     }, [selectedOrganization?.id]);
 
     useEffect(() => {
@@ -102,14 +104,17 @@ export const MemberManagement = () => {
         }
     };
 
+    const roleOptions = [...new Set(members.flatMap(m => m.roles || []))].sort();
+
     const filteredMembers = members.filter(member => {
-        if (!searchTerm) return true;
-        const s = searchTerm.toLowerCase();
-        return (
-            member.userName?.toLowerCase().includes(s) ||
-            member.email?.toLowerCase().includes(s) ||
-            member.position?.toLowerCase().includes(s)
-        );
+        if (searchTerm) {
+            const s = searchTerm.toLowerCase();
+            const nameMatch  = member.userName?.toLowerCase().includes(s);
+            const emailMatch = member.email?.toLowerCase().includes(s);
+            if (!nameMatch && !emailMatch) return false;
+        }
+        if (roleFilter && !(member.roles || []).includes(roleFilter)) return false;
+        return true;
     });
 
     if (!selectedOrganization) {
@@ -143,7 +148,7 @@ export const MemberManagement = () => {
                     <Button
                         onClick={() => navigate(`/users/invite?orgId=${selectedOrganization?.id}`)}
                         size="lg"
-                        className="group relative overflow-hidden bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5"
+                        className="group relative overflow-hidden bg-gray-900 dark:bg-indigo-600 text-white dark:text-white hover:bg-gray-800 dark:hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5"
                     >
                         <span className="relative z-10 flex items-center font-semibold">
                             <UserPlus className="h-5 w-5 mr-2" />
@@ -193,7 +198,7 @@ export const MemberManagement = () => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search by name, email, or position…"
+                                placeholder="Search by name or email…"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -201,7 +206,18 @@ export const MemberManagement = () => {
                             />
                         </div>
 
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex items-center gap-3 flex-shrink-0 flex-wrap justify-end">
+                            {/* Role filter */}
+                            {roleOptions.length > 0 && (
+                                <select
+                                    value={roleFilter}
+                                    onChange={e => setRoleFilter(e.target.value)}
+                                    className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                >
+                                    <option value="">All Roles</option>
+                                    {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                            )}
                             {/* Status filter */}
                             <div className="flex gap-1 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
                                 {[['All', null], ['Active', true], ['Inactive', false]].map(([label, val]) => (
@@ -292,6 +308,20 @@ export const MemberManagement = () => {
                                                 {new Date(member.joinedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                                             </div>
                                         </div>
+                                        {member.roles?.length > 0 && (
+                                            <div className="mt-2.5 flex flex-wrap gap-1">
+                                                {[...new Set(member.roles)].slice(0, 3).map(role => (
+                                                    <span key={role} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium">
+                                                        {role}
+                                                    </span>
+                                                ))}
+                                                {member.roles.length > 3 && (
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                                                        +{member.roles.length - 3}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -303,6 +333,7 @@ export const MemberManagement = () => {
                                         <tr className="border-b border-gray-100 dark:border-gray-700">
                                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member</th>
                                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Roles</th>
                                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
                                             {canDeleteMember && <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>}
@@ -327,6 +358,20 @@ export const MemberManagement = () => {
                                                 <td className="py-4 px-4">
                                                     <div className="text-sm text-gray-600 dark:text-gray-300">{member.email}</div>
                                                     {member.phoneNumber && <div className="text-xs text-gray-400 mt-0.5">{member.phoneNumber}</div>}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {[...new Set(member.roles || [])].slice(0, 2).map(role => (
+                                                            <span key={role} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium">
+                                                                {role}
+                                                            </span>
+                                                        ))}
+                                                        {(member.roles?.length ?? 0) > 2 && (
+                                                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                                                                +{member.roles.length - 2}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${member.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
@@ -364,7 +409,11 @@ export const MemberManagement = () => {
 
             {/* User Detail Modal */}
             {selectedUserId && (
-                <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+                <UserDetailModal
+                    userId={selectedUserId}
+                    onClose={() => setSelectedUserId(null)}
+                    organizationId={!isSuperAdmin ? selectedOrganization?.id : undefined}
+                />
             )}
         </div>
     );

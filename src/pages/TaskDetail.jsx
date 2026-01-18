@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   Calendar, User, Users, Folder, ChevronRight, AlertCircle, CheckCircle,
   Clock, FileText, Image as ImageIcon, Video, Paperclip, Upload, TrendingUp,
@@ -190,10 +190,11 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
         mediaUrls: submitMedia.urls,
         mediaTypes: submitMedia.types,
       });
-      setShowSubmitForm(false);
+      // Keep form open (FieldWorkers may submit multiple updates), just reset fields
       setSubmitDescription('');
       setSubmitProgress(task?.progress ?? 0);
       setSubmitMedia({ urls: [], types: [] });
+      setSubmitError('');
       fetchUpdates();
       onTaskRefresh?.();
     } catch (e) {
@@ -219,16 +220,23 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
     }
   };
 
+  // ── Permission checks ──────────────────────────────────────────────────────
+  const myProjectRole  = task?.currentUserProjectRole;
+  const isAssigned     = task?.assignees?.some(a => a.userId === user?.id);
+  const isAdminOrAbove = ['ProjectAdministrator', 'ProjectOwner', 'PlatformAdmin', 'SuperAdmin'].includes(myProjectRole);
+  const canSubmitUpdate = myProjectRole === 'FieldWorker' && isAssigned;
+
+  // Auto-open the submit form as soon as we know the user can submit
+  useEffect(() => {
+    if (canSubmitUpdate) setShowSubmitForm(true);
+  }, [canSubmitUpdate]);
+
   if (loading) return <div className="py-12 flex justify-center"><Loader className="h-6 w-6 animate-spin text-primary-600" /></div>;
 
   return (
     <div className="space-y-4">
-      {/* ── Inline Submit Form ── */}
-      {!showSubmitForm ? (
-        <Button className="w-full gap-2" onClick={() => setShowSubmitForm(true)}>
-          <Send className="h-4 w-4" /> Submit Progress Update
-        </Button>
-      ) : (
+      {/* ── Inline Submit Form (FieldWorkers assigned to task only) ── */}
+      {canSubmitUpdate && (showSubmitForm ? (
         <Card className="border-2 border-primary-200 dark:border-primary-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -297,7 +305,11 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : (
+        <Button className="w-full gap-2" onClick={() => setShowSubmitForm(true)}>
+          <Send className="h-4 w-4" /> Submit Progress Update
+        </Button>
+      ))}
 
       {error && <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm text-red-700 dark:text-red-300">{error}</div>}
 
@@ -319,9 +331,9 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
                                 || u.status === UPDATE_STATUS.SupervisorRejected
                                 || u.status === UPDATE_STATUS.AdminRejected;
 
-          const canReviewAsCA    = isUnderCA;
-          const canReviewAsSup   = isUnderSupervisor;
-          const canReviewAsAdmin = isUnderAdmin;
+          const canReviewAsCA    = isUnderCA    && myProjectRole === 'ContractorAdmin';
+          const canReviewAsSup   = isUnderSupervisor && myProjectRole === 'DepartmentSupervisor';
+          const canReviewAsAdmin = isUnderAdmin && isAdminOrAbove;
 
           return (
             <Card key={u.id}>
@@ -352,10 +364,18 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
                   <div className="mb-4 flex flex-wrap gap-2">
                     {u.mediaUrls.map((url, i) => {
                       const type = u.mediaTypes?.[i] || 'image';
-                      if (type === 'image') return <img key={i} src={url} alt="" className="h-24 w-24 object-cover rounded-lg" />;
+                      if (type === 'image') return (
+                        <img key={i} src={url} alt="" className="h-24 w-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                          onError={e => { e.currentTarget.style.display = 'none'; }} />
+                      );
                       if (type === 'video') return <video key={i} src={url} className="h-24 w-24 rounded-lg" controls />;
                       if (type === 'audio') return <audio key={i} src={url} controls className="w-full" />;
-                      return <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-primary-600 underline"><Paperclip className="h-3 w-3" /> Document {i + 1}</a>;
+                      return (
+                        <a key={i} href={url} target="_blank" rel="noreferrer"
+                          className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2.5 py-1.5 rounded-lg hover:underline">
+                          <Paperclip className="h-3 w-3" /> Document {i + 1}
+                        </a>
+                      );
                     })}
                   </div>
                 )}
@@ -405,7 +425,7 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
 }
 
 // ─── Assignees Tab ────────────────────────────────────────────────────────────
-function AssigneesTab({ assignees, onAssign }) {
+function AssigneesTab({ assignees, onAssign, projectId }) {
   const [view, setView] = useState('grid');
   const [selectedUserId, setSelectedUserId] = useState(null);
 
@@ -492,7 +512,7 @@ function AssigneesTab({ assignees, onAssign }) {
       </Card>
 
       {selectedUserId && (
-        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} projectId={projectId} />
       )}
     </>
   );
@@ -641,19 +661,23 @@ function SubtasksTab({ subtasks, onAdd }) {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function TaskDetail() {
-  const { taskId } = useParams();
-  const navigate   = useNavigate();
+  const { taskId }       = useParams();
+  const navigate         = useNavigate();
+  const [searchParams]   = useSearchParams();
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const docInputRef   = useRef(null);
   const audioInputRef = useRef(null);
+
+  const { user } = useAuth();
 
   const [task,          setTask]          = useState(null);
   const [subtasks,      setSubtasks]      = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [uploadingMedia,setUploadingMedia]= useState(false);
   const [error,         setError]         = useState('');
-  const [activeTab,     setActiveTab]     = useState('overview');
+  // Honour ?tab=updates (or any tab) when navigating from Reviews page
+  const [activeTab,     setActiveTab]     = useState(searchParams.get('tab') || 'overview');
   const [isEditModalOpen,    setIsEditModalOpen]    = useState(false);
   const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
 
@@ -776,12 +800,14 @@ export function TaskDetail() {
                 )}
               </div>
             </div>
-            <Button
-              className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 flex-shrink-0"
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              <Edit2 className="h-4 w-4 mr-2" /> Edit
-            </Button>
+            {['ProjectAdministrator', 'ProjectOwner', 'PlatformAdmin', 'SuperAdmin'].includes(task?.currentUserProjectRole) && (
+              <Button
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 flex-shrink-0"
+                onClick={() => setIsEditModalOpen(true)}
+              >
+                <Edit2 className="h-4 w-4 mr-2" /> Edit
+              </Button>
+            )}
           </div>
 
           {/* Tabs */}
@@ -844,7 +870,7 @@ export function TaskDetail() {
 
             {/* ASSIGNEES TAB */}
             {activeTab === 'assignees' && (
-              <AssigneesTab assignees={task?.assignees || []} onAssign={() => setIsEditModalOpen(true)} />
+              <AssigneesTab assignees={task?.assignees || []} onAssign={() => setIsEditModalOpen(true)} projectId={task?.projectId} />
             )}
 
             {/* COMMENTS TAB */}

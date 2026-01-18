@@ -212,7 +212,7 @@ function TasksTab({ projectId, navigate }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState('grid');
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -682,7 +682,7 @@ function ContractorsTab({ projectId, navigate }) {
       )}
 
       {selectedUserId && (
-        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} projectId={projectId} />
       )}
     </div>
   );
@@ -824,7 +824,7 @@ function DepartmentsTab({ projectId, navigate }) {
       )}
 
       {selectedUserId && (
-        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} projectId={projectId} />
       )}
     </div>
   );
@@ -856,6 +856,7 @@ function MembersTab({ projectId }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [totalMembers, setTotalMembers] = useState(0);
@@ -882,8 +883,12 @@ function MembersTab({ projectId }) {
 
   useEffect(() => { fetchMembers(search); }, [projectId, activeFilter]);
 
-  const deptOptions = [...new Set(members.filter(m => m.departmentName).map(m => m.departmentName))].sort();
-  const displayed = deptFilter ? members.filter(m => m.departmentName === deptFilter) : members;
+  const deptOptions  = [...new Set(members.filter(m => m.departmentName).map(m => m.departmentName))].sort();
+  const roleOptions  = [...new Set(members.filter(m => m.roleName).map(m => m.roleName))].sort();
+  const displayed = members.filter(m =>
+    (!deptFilter || m.departmentName === deptFilter) &&
+    (!roleFilter || m.roleName === roleFilter)
+  );
 
   return (
     <div className="space-y-5">
@@ -902,7 +907,7 @@ function MembersTab({ projectId }) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, email, role… (Enter)"
+                placeholder="Search by name or email… (Enter)"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && fetchMembers(search)}
@@ -914,6 +919,13 @@ function MembersTab({ projectId }) {
                 className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">All Departments</option>
                 {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            )}
+            {roleOptions.length > 0 && (
+              <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Roles</option>
+                {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             )}
             <select value={activeFilter} onChange={e => setActiveFilter(e.target.value)}
@@ -1014,7 +1026,7 @@ function MembersTab({ projectId }) {
       )}
 
       {selectedUserId && (
-        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} projectId={projectId} />
       )}
     </div>
   );

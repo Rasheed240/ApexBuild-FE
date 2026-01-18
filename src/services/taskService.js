@@ -80,8 +80,14 @@ export const taskService = {
     return unwrap(response);
   },
 
-  // Get pending task updates for review (scoped to current user's role)
+  // Get pending task updates for review (scoped to current user's role; backend role-filters)
   getPendingUpdates: async (params = {}) => {
+    const response = await api.get('/tasks/pending-updates', { params });
+    return unwrap(response);
+  },
+
+  // Get all updates submitted by the current user across tasks
+  getMySubmittedUpdates: async (params = {}) => {
     const response = await api.get('/tasks/pending-updates', { params });
     return unwrap(response);
   },
