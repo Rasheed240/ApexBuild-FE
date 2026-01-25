@@ -35,6 +35,7 @@ import { NotFound } from './pages/NotFound';
 import { MilestonesPage } from './pages/MilestonesPage';
 import { ContractorsPage } from './pages/ContractorsPage';
 import { DepartmentsPage } from './pages/DepartmentsPage';
+import { Guide } from './pages/Guide';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -353,6 +354,20 @@ function App() {
                       <ErrorBoundary>
                         <DashboardLayout>
                           <DepartmentsPage />
+                        </DashboardLayout>
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Guide */}
+                <Route
+                  path="/guide"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <DashboardLayout>
+                          <Guide />
                         </DashboardLayout>
                       </ErrorBoundary>
                     </ProtectedRoute>
