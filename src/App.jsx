@@ -16,6 +16,7 @@ import { ProjectsList } from './pages/ProjectsList';
 import { ProjectsNew } from './pages/ProjectsNew';
 import { ProjectManagement } from './pages/ProjectManagement';
 import { TasksPage } from './pages/Tasks';
+import { TaskCreate } from './pages/TaskCreate';
 import { TaskDetail } from './pages/TaskDetail';
 import { MyTasks } from './pages/MyTasks';
 import { TaskSubmission } from './pages/TaskSubmission';
@@ -31,6 +32,9 @@ import { MemberDetail } from './pages/MemberDetail';
 import { NotificationsPage } from './pages/Notifications';
 import { SubscriptionsPage } from './pages/Subscriptions';
 import { NotFound } from './pages/NotFound';
+import { MilestonesPage } from './pages/MilestonesPage';
+import { ContractorsPage } from './pages/ContractorsPage';
+import { DepartmentsPage } from './pages/DepartmentsPage';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -153,6 +157,18 @@ function App() {
                       <ErrorBoundary>
                         <DashboardLayout>
                           <TasksPage />
+                        </DashboardLayout>
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tasks/new"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <DashboardLayout>
+                          <TaskCreate />
                         </DashboardLayout>
                       </ErrorBoundary>
                     </ProtectedRoute>
@@ -297,6 +313,46 @@ function App() {
                       <ErrorBoundary>
                         <DashboardLayout>
                           <SubscriptionsPage />
+                        </DashboardLayout>
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Milestones */}
+                <Route
+                  path="/projects/:projectId/milestones"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <DashboardLayout>
+                          <MilestonesPage />
+                        </DashboardLayout>
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Contractors */}
+                <Route
+                  path="/projects/:projectId/contractors"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <DashboardLayout>
+                          <ContractorsPage />
+                        </DashboardLayout>
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Departments */}
+                <Route
+                  path="/projects/:projectId/departments"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <DashboardLayout>
+                          <DepartmentsPage />
                         </DashboardLayout>
                       </ErrorBoundary>
                     </ProtectedRoute>
