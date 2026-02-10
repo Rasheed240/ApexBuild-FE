@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrganizations } from '../contexts/OrganizationContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import {
@@ -21,6 +22,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 
 export const Dashboard = () => {
   const { user } = useAuth();
+  const { selectedOrganization } = useOrganizations();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     activeProjects: 0,
@@ -42,7 +44,8 @@ export const Dashboard = () => {
     // Fetch real dashboard data from backend using axios instance (attaches JWT)
     const fetchStats = async () => {
       try {
-        const res = await (await import('../services/api')).default.get('/dashboard/stats');
+        const params = selectedOrganization?.id ? { organizationId: selectedOrganization.id } : {};
+        const res = await (await import('../services/api')).default.get('/dashboard/stats', { params });
         const payload = res.data ?? res;
         const data = payload.data ?? payload.Data ?? payload;
         setStats({
@@ -69,7 +72,7 @@ export const Dashboard = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [selectedOrganization]);
 
   useEffect(() => {
     // Fetch real metrics data from backend
@@ -99,7 +102,7 @@ export const Dashboard = () => {
     };
 
     fetchMetrics();
-  }, []);
+  }, [selectedOrganization]);
 
   const statCards = [
     {
@@ -264,10 +267,10 @@ export const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.fullName || 'User'}! 👋
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             Here's what's happening with your projects today.
           </p>
         </div>
@@ -367,8 +370,8 @@ export const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.name}</p>
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{stat.name}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.value}</p>
                     <div className="flex items-center gap-2 mt-2">
                       {stat.changeType === 'positive' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-600" />
@@ -380,11 +383,11 @@ export const Dashboard = () => {
                       }`}>
                         {stat.change}
                       </span>
-                      <span className="text-xs text-gray-500">vs last month</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-500">vs last month</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">{stat.description}</p>
                   </div>
-                  <div className={`p-3 rounded-xl ${stat.bgColor} shadow-sm`}>
+                  <div className={`p-3 rounded-xl ${stat.bgColor} dark:bg-gray-700 shadow-sm`}>
                     <Icon className={`h-6 w-6 ${stat.iconColor}`} />
                   </div>
                 </div>
@@ -410,17 +413,17 @@ export const Dashboard = () => {
                     <Link
                       key={action.title}
                       to={action.href}
-                      className="group relative p-5 rounded-xl border border-gray-200 hover:border-primary-300 bg-white hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                      className="group relative p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-gray-800 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
                     >
                       <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${action.color} opacity-5 rounded-bl-full`}></div>
                       <div className="relative">
                         <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${action.color} mb-3 shadow-md group-hover:shadow-lg transition-shadow`}>
                           <Icon className="h-5 w-5 text-white" />
                         </div>
-                        <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                           {action.title}
                         </h3>
-                        <p className="text-sm text-gray-600">{action.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{action.description}</p>
                       </div>
                     </Link>
                   );
@@ -449,13 +452,13 @@ export const Dashboard = () => {
                 const timeStr = activity.timestamp ? new Date(activity.timestamp).toLocaleString() : activity.time;
 
                 return (
-                  <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className={`p-2 rounded-lg bg-gray-100 ${color}`}>
+                  <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-700 ${color}`}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{timeStr}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.message}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{timeStr}</p>
                     </div>
                   </div>
                 );
@@ -491,16 +494,16 @@ export const Dashboard = () => {
               <div key={project.id ?? index} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">
                       <a href={`/projects/${project.id}`} className="hover:underline">{project.project}</a>
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {project.completed ?? 0} of {project.tasks ?? 0} tasks completed
                     </p>
                   </div>
                   <span className="text-lg font-bold text-primary-600">{project.progress ?? 0}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500 ease-out shadow-sm"
                     style={{ width: `${project.progress ?? 0}%` }}
