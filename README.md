@@ -7,8 +7,7 @@ A modern, responsive React application for **ApexBuild** - a Construction Projec
 ![Settings](assets/settings.png)
 
 <!-- Demo Video -->
-<!-- Replace YOUR_VIDEO_URL with your Cloudinary video URL -->
-<!-- https://YOUR_VIDEO_URL -->
+https://res.cloudinary.com/dok7bqllf/video/upload/v1770725397/Apexdemo_yvwhbm.mp4
 
 ## Features
 
