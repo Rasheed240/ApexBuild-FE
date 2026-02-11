@@ -1,914 +1,350 @@
 import { useState, useEffect } from 'react';
 import { useSubscriptions } from '../contexts/SubscriptionContext';
 import { useOrganizations } from '../contexts/OrganizationContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Alert } from '../components/ui/Alert';
 import {
-  CreditCard,
-  Users,
-  Calendar,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Trash2,
-  Eye,
-  Mail,
-  Clock,
-  Zap,
+  CreditCard, Users, Calendar, AlertTriangle, CheckCircle2, XCircle,
+  RefreshCw, RotateCcw, Loader, DollarSign, Clock, Zap,
 } from 'lucide-react';
+
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
+const STATUS_META = {
+  Active:   { color: 'text-green-600  dark:text-green-400',  bg: 'bg-green-50   dark:bg-green-900/20',  label: 'Active'   },
+  Trial:    { color: 'text-blue-600   dark:text-blue-400',   bg: 'bg-blue-50    dark:bg-blue-900/20',   label: 'Trial'    },
+  Expired:  { color: 'text-red-600    dark:text-red-400',    bg: 'bg-red-50     dark:bg-red-900/20',    label: 'Expired'  },
+  Cancelled:{ color: 'text-gray-600   dark:text-gray-400',   bg: 'bg-gray-50    dark:bg-gray-700',      label: 'Cancelled'},
+  Suspended:{ color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50  dark:bg-orange-900/20', label: 'Suspended'},
+};
+
+function StatCard({ label, value, icon: Icon, color = 'text-primary-600', bg = 'bg-primary-50 dark:bg-primary-900/20' }) {
+  return (
+    <Card>
+      <CardContent className="pt-5 pb-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+          </div>
+          <div className={`${bg} rounded-xl p-3`}>
+            <Icon className={`h-6 w-6 ${color}`} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export const SubscriptionsPage = () => {
   const {
-    subscription,
-    licenses,
-    usersWithLicenses,
-    stats,
-    loading,
-    error,
-    loadSubscription,
-    createSubscription,
-    upgradeSubscription,
-    downgradeSubscription,
-    reactivateSubscription,
-    cancelSubscription,
-    assignLicense,
-    revokeLicense,
-    getPaymentHistory,
+    subscription, stats, seatUsage, loading, error,
+    loadSubscription, createSubscription, renewSubscription,
+    reactivateSubscription, cancelSubscription, getPaymentHistory,
   } = useSubscriptions();
 
   const { selectedOrganization } = useOrganizations();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [actionType, setActionType] = useState(null); // upgrade | downgrade | cancel | reactivate
-  const [formData, setFormData] = useState({
-    numberOfLicenses: 10,
-    trialDays: 14,
-    additionalLicenses: 0,
-    licensesToRemove: 0,
-    reason: '',
-  });
   const [paymentHistory, setPaymentHistory] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeTab,      setActiveTab]      = useState('overview');
+  const [actionLoading,  setActionLoading]  = useState(null);
+  const [cancelReason,   setCancelReason]   = useState('');
+  const [showCancel,     setShowCancel]     = useState(false);
+  const [message,        setMessage]        = useState('');
+  const [msgType,        setMsgType]        = useState('success');
 
   useEffect(() => {
     if (selectedOrganization?.id) {
       loadSubscription(selectedOrganization.id);
     }
-  }, [selectedOrganization, loadSubscription]);
+  }, [selectedOrganization?.id]);
 
-  const clearMessages = () => {
-    setSuccessMessage('');
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const data = await getPaymentHistory();
+      setPaymentHistory(Array.isArray(data) ? data : []);
+    } catch { setPaymentHistory([]); }
+    finally { setHistoryLoading(false); }
   };
 
-  const handleCreateSubscription = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+  useEffect(() => {
+    if (activeTab === 'billing') fetchHistory();
+  }, [activeTab]);
 
-    const result = await createSubscription({
-      numberOfLicenses: parseInt(formData.numberOfLicenses),
-      trialDays: parseInt(formData.trialDays),
-    });
-
-    if (result.success) {
-      setSuccessMessage('Subscription created successfully!');
-      setShowCreateForm(false);
-      setFormData({ numberOfLicenses: 10, trialDays: 14 });
-      clearMessages();
-    }
-
-    setSubmitting(false);
+  const notify = (msg, type = 'success') => {
+    setMessage(msg); setMsgType(type);
+    setTimeout(() => setMessage(''), 4000);
   };
 
-  const handleUpgradeSubscription = async () => {
-    setSubmitting(true);
-
-    const result = await upgradeSubscription(
-      subscription.id,
-      parseInt(formData.additionalLicenses)
-    );
-
-    if (result.success) {
-      setSuccessMessage('Subscription upgraded successfully!');
-      setShowActionModal(false);
-      setFormData({ ...formData, additionalLicenses: 0 });
-      setTimeout(clearMessages, 3000);
-    }
-
-    setSubmitting(false);
+  const handleRenew = async () => {
+    if (!subscription?.id) return;
+    setActionLoading('renew');
+    const { success, error: err } = await renewSubscription(subscription.id);
+    setActionLoading(null);
+    if (success) notify('Subscription renewed successfully!');
+    else notify(err || 'Renewal failed', 'error');
   };
 
-  const handleDowngradeSubscription = async () => {
-    setSubmitting(true);
-
-    const result = await downgradeSubscription(
-      subscription.id,
-      parseInt(formData.licensesToRemove)
-    );
-
-    if (result.success) {
-      setSuccessMessage('Subscription downgraded successfully!');
-      setShowActionModal(false);
-      setFormData({ ...formData, licensesToRemove: 0 });
-      setTimeout(clearMessages, 3000);
-    }
-
-    setSubmitting(false);
+  const handleReactivate = async () => {
+    if (!subscription?.id) return;
+    setActionLoading('reactivate');
+    const { success, error: err } = await reactivateSubscription(subscription.id);
+    setActionLoading(null);
+    if (success) notify('Subscription reactivated!');
+    else notify(err || 'Reactivation failed', 'error');
   };
 
-  const handleReactivateSubscription = async () => {
-    setSubmitting(true);
-
-    const result = await reactivateSubscription(subscription.id);
-
-    if (result.success) {
-      setSuccessMessage('Subscription reactivated successfully!');
-      setShowActionModal(false);
-      setTimeout(clearMessages, 3000);
-    }
-
-    setSubmitting(false);
+  const handleCancel = async () => {
+    if (!subscription?.id) return;
+    setActionLoading('cancel');
+    const { success, error: err } = await cancelSubscription(subscription.id, cancelReason);
+    setActionLoading(null);
+    setShowCancel(false);
+    if (success) notify('Subscription cancelled');
+    else notify(err || 'Cancellation failed', 'error');
   };
 
-  const handleCancelSubscription = async () => {
-    setSubmitting(true);
-
-    const result = await cancelSubscription(subscription.id, formData.reason);
-
-    if (result.success) {
-      setSuccessMessage('Subscription cancelled successfully!');
-      setShowActionModal(false);
-      setFormData({ ...formData, reason: '' });
-      setTimeout(clearMessages, 3000);
-    }
-
-    setSubmitting(false);
+  const handleCreateTrial = async () => {
+    setActionLoading('create');
+    const { success, error: err } = await createSubscription({ isFreePlan: false, trialDays: 30 });
+    setActionLoading(null);
+    if (success) notify('Trial subscription created! 30 days free.');
+    else notify(err || 'Failed to create subscription', 'error');
   };
 
-  const loadPaymentHistory = async () => {
-    const history = await getPaymentHistory();
-    setPaymentHistory(history);
-  };
+  const statusMeta = STATUS_META[subscription?.status] || STATUS_META.Active;
+  const monthlyEstimate = seatUsage ? (seatUsage.activeSeats * (seatUsage.userMonthlyRate ?? 20)) : null;
+  const daysLeft = subscription?.billingEndDate
+    ? Math.ceil((new Date(subscription.billingEndDate) - new Date()) / 86400000)
+    : null;
 
-  const getStatusColor = (status) => {
-    const colors = {
-      Active: 'bg-green-100 text-green-800',
-      Inactive: 'bg-gray-100 text-gray-800',
-      Suspended: 'bg-orange-100 text-orange-800',
-      Cancelled: 'bg-red-100 text-red-800',
-      Expired: 'bg-red-100 text-red-800',
-      PendingPayment: 'bg-yellow-100 text-yellow-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+  const TABS = [
+    { id: 'overview', label: 'Overview'       },
+    { id: 'billing',  label: 'Billing History' },
+  ];
 
-  const getStatusIcon = (status) => {
-    if (status === 'Active') return <CheckCircle2 className="w-4 h-4" />;
-    if (status === 'Cancelled' || status === 'Expired') return <XCircle className="w-4 h-4" />;
-    if (status === 'PendingPayment') return <AlertTriangle className="w-4 h-4" />;
-    return <Clock className="w-4 h-4" />;
-  };
-
-  if (!selectedOrganization) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Alert className="max-w-md" variant="info">
-          Please select an organization to manage subscriptions
-        </Alert>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader className="h-7 w-7 animate-spin text-primary-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+
+        {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <CreditCard className="w-8 h-8 text-blue-600" />
-            Subscription Management
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <CreditCard className="h-6 w-6 text-primary-600" /> Subscription & Billing
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Manage billing, licenses, and users for {selectedOrganization.name}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            {selectedOrganization?.name || 'Organization'} · $20 / active user / month
           </p>
         </div>
-      </div>
 
-      {/* Alerts */}
-      {error && <Alert variant="error">{error}</Alert>}
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
+        {/* Status message */}
+        {message && (
+          <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${msgType === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
+            {msgType === 'success' ? <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> : <AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+            {message}
+          </div>
+        )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'overview'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveTab('licenses')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'licenses'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Licenses ({licenses.length})
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('users');
-            // Auto-load users when tab is clicked
-          }}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'users'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Users with Licenses ({usersWithLicenses.length})
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('payments');
-            loadPaymentHistory();
-          }}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'payments'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Payments
-        </button>
-      </div>
+        {/* Tabs */}
+        <div className="border-b border-gray-200 dark:border-gray-700 flex gap-0">
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === t.id ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Content */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {!subscription ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>No Active Subscription</CardTitle>
-                <CardDescription>
-                  Create a subscription to start managing licenses for your organization
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <button
-                  onClick={() => setShowCreateForm(!showCreateForm)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Subscription
-                </button>
-
-                {showCreateForm && (
-                  <form onSubmit={handleCreateSubscription} className="mt-6 space-y-4 border-t pt-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Number of Licenses
-                      </label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={formData.numberOfLicenses}
-                        onChange={(e) =>
-                          setFormData({ ...formData, numberOfLicenses: e.target.value })
-                        }
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">$10 per license per month</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Trial Period (Days)
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="60"
-                        value={formData.trialDays}
-                        onChange={(e) =>
-                          setFormData({ ...formData, trialDays: e.target.value })
-                        }
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Recommended: 14 days</p>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        type="submit"
-                        disabled={submitting}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        {submitting ? 'Creating...' : 'Create Subscription'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowCreateForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Subscription Status Card */}
+        {/* ─── OVERVIEW ─────────────────────────────────────────────── */}
+        {activeTab === 'overview' && (
+          <>
+            {/* No subscription */}
+            {!subscription ? (
               <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
+                <CardContent className="py-14 text-center">
+                  <CreditCard className="h-14 w-14 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">No subscription yet</h3>
+                  <p className="text-sm text-gray-500 mb-6">Start a 30-day free trial — no credit card required.</p>
+                  <Button onClick={handleCreateTrial} disabled={actionLoading === 'create'} className="gap-1">
+                    {actionLoading === 'create' ? <Loader className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                    Start 30-Day Trial
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Status Banner */}
+                <div className={`${statusMeta.bg} border ${statusMeta.color.replace('text-', 'border-').replace(' dark:text-', ' dark:border-').replace(/dark:\w+/, '')} rounded-xl p-5`}>
+                  <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
-                        {getStatusIcon(subscription.status)}
-                        Subscription Status
-                      </CardTitle>
-                      <CardDescription>Current billing and license information</CardDescription>
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusColor(
-                        subscription.status
-                      )}`}
-                    >
-                      {subscription.status}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Licenses</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {subscription.numberOfLicenses}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Licenses Used</p>
-                      <p className="text-2xl font-bold text-orange-600">
-                        {subscription.licensesUsed}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Available</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {subscription.numberOfLicenses - subscription.licensesUsed}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Cost</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        ${subscription.amount}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Trial Status */}
-                  {subscription.isTrialPeriod && (
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <Zap className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-blue-900 dark:text-blue-100">
-                            Trial Period Active
-                          </p>
-                          <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
-                            Trial ends on{' '}
-                            {new Date(subscription.trialEndDate).toLocaleDateString()}
-                            {' '}
-                            ({Math.max(0, Math.ceil((new Date(subscription.trialEndDate) - new Date()) / (1000 * 60 * 60 * 24)))} days remaining)
-                          </p>
-                          <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                            Billing will begin automatically after trial expires
-                          </p>
-                        </div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Subscription Status</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-2xl font-bold ${statusMeta.color}`}>{statusMeta.label}</span>
+                        {subscription.isFreePlan && <span className="text-xs bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full font-medium text-gray-600">Free Plan</span>}
                       </div>
                     </div>
-                  )}
-
-                  {/* Billing Dates */}
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        Billing Start
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white mt-1">
-                        {new Date(subscription.billingStartDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        Billing End
-                      </p>
-                      <p className="font-medium text-gray-900 dark:text-white mt-1">
-                        {new Date(subscription.billingEndDate).toLocaleDateString()}
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 mb-0.5">Billing Period Ends</p>
+                      <p className={`font-semibold ${daysLeft !== null && daysLeft <= 7 ? 'text-orange-600' : 'text-gray-900 dark:text-white'}`}>
+                        {formatDate(subscription.billingEndDate)}
+                        {daysLeft !== null && ` (${daysLeft}d)`}
                       </p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Auto-Renew Status */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Auto-Renewal
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {subscription.autoRenew
-                          ? 'Enabled - Will renew automatically'
-                          : 'Disabled - Manual renewal required'}
-                      </p>
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <StatCard
+                    label="Active Seats"
+                    value={seatUsage?.activeSeats ?? subscription.activeUserCount ?? 0}
+                    icon={Users}
+                    color="text-indigo-600"
+                    bg="bg-indigo-50 dark:bg-indigo-900/20"
+                  />
+                  <StatCard
+                    label="Rate / User"
+                    value={`$${seatUsage?.userMonthlyRate ?? subscription.userMonthlyRate ?? 20}/mo`}
+                    icon={DollarSign}
+                    color="text-primary-600"
+                  />
+                  <StatCard
+                    label="Est. Monthly"
+                    value={`$${monthlyEstimate ?? (subscription.amount ?? 0)}`}
+                    icon={CreditCard}
+                    color="text-green-600"
+                    bg="bg-green-50 dark:bg-green-900/20"
+                  />
+                  <StatCard
+                    label="Days Left"
+                    value={daysLeft ?? '—'}
+                    icon={Clock}
+                    color={daysLeft !== null && daysLeft <= 7 ? 'text-orange-600' : 'text-gray-600 dark:text-gray-400'}
+                    bg={daysLeft !== null && daysLeft <= 7 ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-gray-100 dark:bg-gray-700'}
+                  />
+                </div>
+
+                {/* Billing Details */}
+                <Card>
+                  <CardHeader><CardTitle>Billing Details</CardTitle></CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Billing Cycle</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{subscription.billingCycle || 'Monthly'}</p>
                     </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        subscription.autoRenew
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {subscription.autoRenew ? 'ON' : 'OFF'}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Auto Renew</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{subscription.autoRenew ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Billing Start</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{formatDate(subscription.billingStartDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Next Billing</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{formatDate(subscription.nextBillingDate)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <button
-                      onClick={() => {
-                        setActionType('upgrade');
-                        setShowActionModal(true);
-                      }}
-                      className="p-2 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <Plus className="w-5 h-5 text-green-600 mb-2" />
-                      <p className="text-sm font-medium">Upgrade</p>
-                      <p className="text-xs text-gray-600">Add licenses</p>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActionType('downgrade');
-                        setShowActionModal(true);
-                      }}
-                      className="p-2 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5 text-orange-600 mb-2" />
-                      <p className="text-sm font-medium">Downgrade</p>
-                      <p className="text-xs text-gray-600">Remove licenses</p>
-                    </button>
-
-                    {subscription.status === 'Cancelled' && (
-                      <button
-                        onClick={() => {
-                          setActionType('reactivate');
-                          setShowActionModal(true);
-                        }}
-                        className="p-2 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        <RotateCcw className="w-5 h-5 text-blue-600 mb-2" />
-                        <p className="text-sm font-medium">Reactivate</p>
-                        <p className="text-xs text-gray-600">Resume billing</p>
-                      </button>
+                {/* Actions */}
+                <Card>
+                  <CardHeader><CardTitle>Actions</CardTitle></CardHeader>
+                  <CardContent className="flex flex-wrap gap-3">
+                    {(subscription.status === 'Active' || subscription.status === 'Trial') && (
+                      <Button variant="outline" onClick={handleRenew} disabled={!!actionLoading} className="gap-1">
+                        {actionLoading === 'renew' ? <Loader className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        Renew Now
+                      </Button>
                     )}
-
+                    {(subscription.status === 'Cancelled' || subscription.status === 'Expired' || subscription.status === 'Suspended') && (
+                      <Button onClick={handleReactivate} disabled={!!actionLoading} className="gap-1">
+                        {actionLoading === 'reactivate' ? <Loader className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                        Reactivate
+                      </Button>
+                    )}
                     {subscription.status !== 'Cancelled' && (
-                      <button
-                        onClick={() => {
-                          setActionType('cancel');
-                          setShowActionModal(true);
-                        }}
-                        className="p-2 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        <XCircle className="w-5 h-5 text-red-600 mb-2" />
-                        <p className="text-sm font-medium">Cancel</p>
-                        <p className="text-xs text-gray-600">Stop subscription</p>
-                      </button>
+                      <Button variant="outline" className="gap-1 text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => setShowCancel(true)} disabled={!!actionLoading}>
+                        <XCircle className="h-4 w-4" /> Cancel Subscription
+                      </Button>
                     )}
+                  </CardContent>
+                </Card>
 
-                    <button
-                      onClick={() => loadSubscription()}
-                      className="p-2 text-left rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <RefreshCw className="w-5 h-5 text-gray-600 mb-2" />
-                      <p className="text-sm font-medium">Refresh</p>
-                      <p className="text-xs text-gray-600">Sync data</p>
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Modal */}
-              {showActionModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                  <Card className="w-full max-w-md">
-                    <CardHeader>
-                      <CardTitle>
-                        {actionType === 'upgrade' && 'Upgrade Subscription'}
-                        {actionType === 'downgrade' && 'Downgrade Subscription'}
-                        {actionType === 'reactivate' && 'Reactivate Subscription'}
-                        {actionType === 'cancel' && 'Cancel Subscription'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {actionType === 'upgrade' && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Additional Licenses
-                            </label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={formData.additionalLicenses}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  additionalLicenses: e.target.value,
-                                })
-                              }
-                              required
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Cost: $
-                              {(parseInt(formData.additionalLicenses) || 0) * 10}/month
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={handleUpgradeSubscription}
-                              disabled={submitting || !formData.additionalLicenses}
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                              {submitting ? 'Upgrading...' : 'Confirm Upgrade'}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setShowActionModal(false)}
-                              className="flex-1"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </>
-                      )}
-
-                      {actionType === 'downgrade' && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Licenses to Remove
-                            </label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max={subscription.numberOfLicenses - 1}
-                              value={formData.licensesToRemove}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  licensesToRemove: e.target.value,
-                                })
-                              }
-                              required
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              New total: {subscription.numberOfLicenses - (parseInt(formData.licensesToRemove) || 0)} licenses
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={handleDowngradeSubscription}
-                              disabled={submitting || !formData.licensesToRemove}
-                              className="flex-1 bg-orange-600 hover:bg-orange-700"
-                            >
-                              {submitting ? 'Downgrading...' : 'Confirm Downgrade'}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setShowActionModal(false)}
-                              className="flex-1"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </>
-                      )}
-
-                      {actionType === 'reactivate' && (
-                        <>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Reactivate your subscription and resume billing?
-                          </p>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={handleReactivateSubscription}
-                              disabled={submitting}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700"
-                            >
-                              {submitting ? 'Reactivating...' : 'Confirm Reactivation'}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setShowActionModal(false)}
-                              className="flex-1"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </>
-                      )}
-
-                      {actionType === 'cancel' && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Reason (Optional)
-                            </label>
-                            <textarea
-                              value={formData.reason}
-                              onChange={(e) =>
-                                setFormData({ ...formData, reason: e.target.value })
-                              }
-                              placeholder="Why are you cancelling?"
-                              rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            />
-                          </div>
-                          <Alert variant="warning">
-                            Cancelling will revoke all active licenses in 24 hours
-                          </Alert>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={handleCancelSubscription}
-                              disabled={submitting}
-                              className="flex-1 bg-red-600 hover:bg-red-700"
-                            >
-                              {submitting ? 'Cancelling...' : 'Confirm Cancellation'}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setShowActionModal(false)}
-                              className="flex-1"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </>
-                      )}
+                {/* Cancel confirmation */}
+                {showCancel && (
+                  <Card className="border-red-200 dark:border-red-800">
+                    <CardContent className="pt-5">
+                      <h4 className="font-semibold text-red-700 dark:text-red-300 mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" /> Confirm Cancellation
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Your subscription will remain active until {formatDate(subscription.billingEndDate)}.</p>
+                      <textarea
+                        value={cancelReason}
+                        onChange={e => setCancelReason(e.target.value)}
+                        placeholder="Reason for cancellation (optional)"
+                        rows={2}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-red-500 mb-3"
+                      />
+                      <div className="flex gap-3">
+                        <Button size="sm" variant="outline" onClick={() => setShowCancel(false)}>Keep Subscription</Button>
+                        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white gap-1"
+                          onClick={handleCancel} disabled={actionLoading === 'cancel'}>
+                          {actionLoading === 'cancel' ? <Loader className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                          Yes, Cancel
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* ─── BILLING HISTORY ───────────────────────────────────────── */}
+        {activeTab === 'billing' && (
+          <Card>
+            <CardHeader><CardTitle>Payment History</CardTitle></CardHeader>
+            <CardContent>
+              {historyLoading ? (
+                <div className="py-8 flex justify-center"><Loader className="h-6 w-6 animate-spin text-primary-600" /></div>
+              ) : paymentHistory.length === 0 ? (
+                <div className="py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  No payment records yet
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {paymentHistory.map((p, i) => (
+                    <div key={p.id || i} className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{p.description || 'Subscription Payment'}</p>
+                        <p className="text-xs text-gray-500">{formatDate(p.paidAt || p.createdAt)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900 dark:text-white">${p.amount}</p>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${p.status === 'Paid' || p.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+                          {p.status || 'Paid'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Licenses Tab */}
-      {activeTab === 'licenses' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              Active Licenses
-            </CardTitle>
-            <CardDescription>
-              {licenses.length} license{licenses.length !== 1 ? 's' : ''} assigned
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {licenses.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No licenses assigned yet</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b border-gray-200 dark:border-gray-700">
-                    <tr>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        User
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        License Key
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Status
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Valid Until
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Days Left
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {licenses.map((license) => (
-                      <tr key={license.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td className="py-2 px-3 text-gray-900 dark:text-white">{license.user?.fullName}</td>
-                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400 font-mono text-sm">
-                          {license.licenseKey}
-                        </td>
-                        <td className="py-2 px-3">
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(
-                              license.status
-                            )}`}
-                          >
-                            {getStatusIcon(license.status)}
-                            {license.status}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400">
-                          {new Date(license.validUntil).toLocaleDateString()}
-                        </td>
-                        <td className="py-2 px-3">
-                          <span className={license.daysUntilExpiration < 7 ? 'text-red-600 font-medium' : 'text-gray-600 dark:text-gray-400'}>
-                            {license.daysUntilExpiration}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3">
-                          <button
-                            onClick={() => revokeLicense(license.id, 'Revoked by admin')}
-                            className="text-red-600 hover:text-red-700 text-sm font-medium"
-                            disabled={submitting}
-                          >
-                            Revoke
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Users with Licenses Tab */}
-      {activeTab === 'users' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Users with Active Licenses
-            </CardTitle>
-            <CardDescription>
-              {usersWithLicenses.length} user{usersWithLicenses.length !== 1 ? 's' : ''} with licenses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {usersWithLicenses.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No users have licenses yet</p>
-            ) : (
-              <div className="space-y-3">
-                {usersWithLicenses.map((user) => (
-                  <div
-                    key={user.id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                          <span className="text-sm font-bold text-blue-600 dark:text-blue-300">
-                            {user.fullName?.charAt(0)?.toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {user.fullName}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {user.email}
-                          </p>
-                          {user.license && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
-                                {user.license.status}
-                              </span>
-                              <span className="text-xs text-gray-600 dark:text-gray-400">
-                                Expires: {new Date(user.license.validUntil).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => revokeLicense(user.license?.id, 'Revoked')}
-                        disabled={submitting}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Payments Tab */}
-      {activeTab === 'payments' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              Payment History
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {paymentHistory.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No payment history</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b border-gray-200 dark:border-gray-700">
-                    <tr>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Date
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Amount
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Type
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Status
-                      </th>
-                      <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">
-                        Stripe Charge ID
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paymentHistory.map((payment) => (
-                      <tr key={payment.id} className="border-b border-gray-200 dark:border-gray-700">
-                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400">
-                          {new Date(payment.paymentDate).toLocaleDateString()}
-                        </td>
-                        <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">
-                          ${payment.amount}
-                        </td>
-                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400">
-                          {payment.paymentType}
-                        </td>
-                        <td className="py-2 px-3">
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                              payment.status
-                            )}`}
-                          >
-                            {payment.status}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400 font-mono text-sm">
-                          {payment.stripeChargeId || '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {loading && (
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin">
-            <RefreshCw className="w-6 h-6 text-blue-600" />
-          </div>
-        </div>
-      )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
