@@ -7,14 +7,8 @@ import { Spinner } from '../components/ui/Spinner';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import {
-  Plus,
-  Search,
-  Filter,
-  Clock,
-  Users,
-  Calendar,
-  TrendingUp,
-  Image as ImageIcon,
+  Plus, Search, Filter, Clock, Users, Calendar, TrendingUp,
+  Image as ImageIcon, LayoutGrid, List,
 } from 'lucide-react';
 import { TaskFormModal } from '../components/tasks/TaskFormModal';
 
@@ -27,6 +21,7 @@ export const TasksPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // 'all' or 'my'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
   useEffect(() => {
     if (selectedOrganization?.id) {
@@ -195,6 +190,23 @@ export const TasksPage = () => {
               <Filter className="w-5 h-5 mr-2" />
               Filters
             </Button>
+            {/* View toggle */}
+            <div className="flex border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-3 transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                title="Grid view"
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-3 transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                title="List view"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -227,37 +239,23 @@ export const TasksPage = () => {
               </Button>
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
+          /* ── Grid View ─────────────────────────────────────────────────── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tasks.map((task) => {
               const taskImage = getTaskImage(task);
               const isGradient = taskImage.startsWith('linear-gradient');
-
               return (
-                <Link
-                  key={task.id}
-                  to={`/tasks/${task.id}`}
-                  className="group block h-full"
-                >
+                <Link key={task.id} to={`/tasks/${task.id}`} className="group block h-full">
                   <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 h-full flex flex-col">
-                    {/* Task Image/Gradient */}
                     <div className="relative h-48 overflow-hidden shrink-0">
                       {isGradient ? (
-                        <div
-                          className="absolute inset-0"
-                          style={{ background: taskImage }}
-                        >
+                        <div className="absolute inset-0" style={{ background: taskImage }}>
                           <div className="absolute inset-0 bg-black/20" />
                         </div>
                       ) : (
-                        <img
-                          src={taskImage}
-                          alt={task.title}
-                          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                        />
+                        <img src={taskImage} alt={task.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                       )}
-
-                      {/* Badges Overlay */}
                       <div className="absolute top-4 right-4 flex flex-col gap-2">
                         <Badge variant={getStatusVariant(task.status)} className="backdrop-blur-sm bg-white/90 dark:bg-gray-900/90">
                           {getStatusLabel(task.status)}
@@ -268,75 +266,41 @@ export const TasksPage = () => {
                           </Badge>
                         )}
                       </div>
-
-                      {/* Progress Bar */}
                       {task.progress != null && (
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-black/30">
-                          <div
-                            className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
-                            style={{ width: `${task.progress}%` }}
-                          />
+                          <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500" style={{ width: `${task.progress}%` }} />
                         </div>
                       )}
                     </div>
-
-                    {/* Task Content */}
                     <div className="p-5 flex flex-col flex-1">
-                      {/* Title */}
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {task.title || task.name || 'Untitled Task'}
+                        {task.title || 'Untitled Task'}
                       </h3>
-
-                      {/* Code */}
-                      {task.code && (
-                        <p className="text-sm text-indigo-600 dark:text-indigo-400 font-mono mb-3">
-                          {task.code}
-                        </p>
-                      )}
-
-                      {/* Description */}
-                      {task.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 flex-grow">
-                          {task.description}
-                        </p>
-                      )}
-
-                      {/* Meta Info */}
+                      {task.code && <p className="text-sm text-indigo-600 dark:text-indigo-400 font-mono mb-3">{task.code}</p>}
+                      {task.description && <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 flex-grow">{task.description}</p>}
                       <div className="space-y-2 mt-auto">
                         {task.departmentName && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Users className="w-4 h-4" />
-                            <span>{task.departmentName}</span>
+                            <Users className="w-4 h-4" /><span>{task.departmentName}</span>
                           </div>
                         )}
-
                         {task.assignees && task.assignees.length > 0 && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <Users className="w-4 h-4" />
-                            <div className="flex flex-wrap gap-1">
-                              {task.assignees.slice(0, 2).map((assignee, idx) => (
-                                <span key={assignee.userId}>
-                                  {assignee.userName}{idx < Math.min(task.assignees.length, 2) - 1 ? ',' : ''}
-                                </span>
-                              ))}
-                              {task.assignees.length > 2 && (
-                                <span className="font-medium">+{task.assignees.length - 2} more</span>
-                              )}
-                            </div>
+                            <span>
+                              {task.assignees.slice(0, 2).map(a => a.userName).join(', ')}
+                              {task.assignees.length > 2 && ` +${task.assignees.length - 2} more`}
+                            </span>
                           </div>
                         )}
-
                         {task.dueDate && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Calendar className="w-4 h-4" />
-                            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            <Calendar className="w-4 h-4" /><span>{new Date(task.dueDate).toLocaleDateString()}</span>
                           </div>
                         )}
-
                         {task.progress != null && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <TrendingUp className="w-4 h-4" />
-                            <span>{task.progress}% Complete</span>
+                            <TrendingUp className="w-4 h-4" /><span>{task.progress}% Complete</span>
                           </div>
                         )}
                       </div>
@@ -345,6 +309,75 @@ export const TasksPage = () => {
                 </Link>
               );
             })}
+          </div>
+        ) : (
+          /* ── List View ─────────────────────────────────────────────────── */
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <span className="col-span-4">Task</span>
+              <span className="col-span-2">Department</span>
+              <span className="col-span-2">Assignees</span>
+              <span className="col-span-1">Priority</span>
+              <span className="col-span-1">Progress</span>
+              <span className="col-span-2">Due Date</span>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {tasks.map(task => (
+                <Link key={task.id} to={`/tasks/${task.id}`} className="group block">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                    {/* Task title + code + status */}
+                    <div className="md:col-span-4 flex items-start gap-3 min-w-0">
+                      <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                        style={{ background: getTaskImage(task).startsWith('linear') ? getTaskImage(task) : '#6366f1' }}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate transition-colors">
+                          {task.title || 'Untitled Task'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {task.code && <span className="text-xs font-mono text-indigo-500">{task.code}</span>}
+                          <Badge variant={getStatusVariant(task.status)} size="sm">{getStatusLabel(task.status)}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Department */}
+                    <div className="md:col-span-2 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      {task.departmentName || '—'}
+                    </div>
+                    {/* Assignees */}
+                    <div className="md:col-span-2 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      {task.assignees && task.assignees.length > 0 ? (
+                        <span>
+                          {task.assignees[0].userName}
+                          {task.assignees.length > 1 && <span className="text-gray-400"> +{task.assignees.length - 1}</span>}
+                        </span>
+                      ) : '—'}
+                    </div>
+                    {/* Priority */}
+                    <div className="md:col-span-1 flex items-center">
+                      {task.priority ? (
+                        <Badge variant={getPriorityVariant(task.priority)} size="sm">{getPriorityLabel(task.priority)}</Badge>
+                      ) : '—'}
+                    </div>
+                    {/* Progress */}
+                    <div className="md:col-span-1 flex items-center gap-2">
+                      {task.progress != null && (
+                        <>
+                          <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-500 transition-all" style={{ width: `${task.progress}%` }} />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-8 text-right">{task.progress}%</span>
+                        </>
+                      )}
+                    </div>
+                    {/* Due date */}
+                    <div className="md:col-span-2 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '—'}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </div>
