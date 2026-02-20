@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,7 @@ import { departmentService } from '../services/departmentService';
 import api from '../services/api';
 import {
   ChevronLeft, Plus, Loader, AlertCircle, Calendar, Target, Flag,
-  Clock, MapPin, Tag, X, CheckCircle2,
+  Clock, MapPin, Tag, X, CheckCircle2, Users, Search, CheckCheck,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -53,16 +53,21 @@ export const TaskCreate = () => {
   const [departments, setDepartments] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(projectId || '');
+  const [members, setMembers] = useState([]);
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
+  const [memberSearch, setMemberSearch] = useState('');
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { priority: '2' },
   });
+
+  const watchedDeptId = watch('departmentId');
 
   // Load projects for the dropdown
   useEffect(() => {
@@ -76,11 +81,28 @@ export const TaskCreate = () => {
 
   // Load departments when project is selected
   useEffect(() => {
-    if (!selectedProjectId) { setDepartments([]); return; }
+    if (!selectedProjectId) { setDepartments([]); setMembers([]); return; }
     departmentService.getByProject(selectedProjectId)
       .then(data => setDepartments(Array.isArray(data) ? data : []))
       .catch(() => setDepartments([]));
   }, [selectedProjectId]);
+
+  // Load members when project or department changes
+  const fetchMembers = useCallback(async (pid, deptId) => {
+    if (!pid) { setMembers([]); return; }
+    try {
+      const params = { isActive: true, pageSize: 200 };
+      if (deptId) params.departmentId = deptId;
+      const res = await api.get(`/projects/${pid}/members`, { params });
+      const data = res.data?.data ?? res.data;
+      setMembers(data?.members ?? []);
+    } catch { setMembers([]); }
+  }, []);
+
+  useEffect(() => {
+    fetchMembers(selectedProjectId, watchedDeptId || null);
+    setSelectedAssignees([]);
+  }, [selectedProjectId, watchedDeptId]);
 
   const addTag = () => {
     const t = tagInput.trim();
@@ -89,6 +111,26 @@ export const TaskCreate = () => {
   };
 
   const removeTag = (tag) => setTags(prev => prev.filter(t => t !== tag));
+
+  const filteredMembers = members.filter(m =>
+    !memberSearch ||
+    m.fullName?.toLowerCase().includes(memberSearch.toLowerCase()) ||
+    m.email?.toLowerCase().includes(memberSearch.toLowerCase())
+  );
+
+  const allSelected = filteredMembers.length > 0 && filteredMembers.every(m => selectedAssignees.includes(m.userId));
+
+  const toggleAssignee = (userId) =>
+    setSelectedAssignees(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      const ids = new Set(filteredMembers.map(m => m.userId));
+      setSelectedAssignees(prev => prev.filter(id => !ids.has(id)));
+    } else {
+      setSelectedAssignees(prev => [...new Set([...prev, ...filteredMembers.map(m => m.userId)])]);
+    }
+  };
 
   const onSubmit = async (data) => {
     setError('');
@@ -104,7 +146,7 @@ export const TaskCreate = () => {
         estimatedHours: data.estimatedHours ? parseInt(data.estimatedHours) : 0,
         location: data.location || null,
         tags: tags.length ? tags : null,
-        assignedUserIds: [],
+        assignedUserIds: selectedAssignees,
       });
       setSuccess(true);
     } catch (err) {
@@ -235,6 +277,58 @@ export const TaskCreate = () => {
               </select>
               {errors.departmentId && <p className="text-xs text-red-500 mt-1">{errors.departmentId.message}</p>}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Assign To */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4 text-primary-500" /> Assign To
+                {watchedDeptId && <span className="text-xs text-gray-400 font-normal">(filtered by dept)</span>}
+              </CardTitle>
+              {filteredMembers.length > 0 && (
+                <button type="button" onClick={toggleSelectAll}
+                  className="text-xs flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:underline">
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  {allSelected ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="pb-5">
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input type="text" value={memberSearch} onChange={e => setMemberSearch(e.target.value)}
+                placeholder="Search members…"
+                className={inputCls(false) + ' pl-9 text-sm'} />
+            </div>
+            <div className="border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 max-h-52 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+              {!selectedProjectId ? (
+                <p className="text-sm text-gray-400 p-4 text-center">Select a project first</p>
+              ) : filteredMembers.length === 0 ? (
+                <p className="text-sm text-gray-400 p-4 text-center">
+                  {watchedDeptId ? 'No members in this department' : 'No project members found'}
+                </p>
+              ) : filteredMembers.map(m => (
+                <label key={m.userId} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors">
+                  <input type="checkbox" checked={selectedAssignees.includes(m.userId)} onChange={() => toggleAssignee(m.userId)}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
+                  <span className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    {m.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '?'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{m.fullName}</p>
+                    {m.position && <p className="text-xs text-gray-500 truncate">{m.position}</p>}
+                  </div>
+                </label>
+              ))}
+            </div>
+            {selectedAssignees.length > 0 && (
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                {selectedAssignees.length} assignee{selectedAssignees.length !== 1 ? 's' : ''} selected
+              </p>
+            )}
           </CardContent>
         </Card>
 

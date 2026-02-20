@@ -418,11 +418,13 @@ export function TaskDetail() {
   const statusColor = TASK_STATUS_COLORS[task?.status] || '';
 
   const TABS = [
-    { id: 'overview',  label: 'Overview',   icon: TrendingUp    },
-    { id: 'updates',   label: 'Updates',    icon: Activity      },
-    { id: 'comments',  label: 'Comments',   icon: MessageSquare },
-    { id: 'media',     label: 'Media',      icon: ImageIcon     },
-    { id: 'subtasks',  label: 'Subtasks',   icon: Layers        },
+    { id: 'overview',   label: 'Overview',   icon: TrendingUp    },
+    { id: 'updates',    label: 'Updates',    icon: Activity      },
+    { id: 'assignees',  label: 'Assignees',  icon: Users,
+      badge: task?.assignees?.length || null },
+    { id: 'comments',   label: 'Comments',   icon: MessageSquare },
+    { id: 'media',      label: 'Media',      icon: ImageIcon     },
+    { id: 'subtasks',   label: 'Subtasks',   icon: Layers        },
   ];
 
   return (
@@ -493,6 +495,11 @@ export function TaskDetail() {
                     isActive ? 'border-white text-white' : 'border-transparent text-white/60 hover:text-white/90'
                   }`}>
                   <Icon className="h-4 w-4" /> {tab.label}
+                  {tab.badge ? (
+                    <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-white/20 text-white leading-none">
+                      {tab.badge}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
@@ -534,6 +541,64 @@ export function TaskDetail() {
 
             {/* UPDATES TAB */}
             {activeTab === 'updates' && <UpdatesTab taskId={taskId} task={task} />}
+
+            {/* ASSIGNEES TAB */}
+            {activeTab === 'assignees' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Assigned Users
+                    {task?.assignees?.length > 0 && (
+                      <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">
+                        ({task.assignees.length})
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!task?.assignees || task.assignees.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">No users assigned to this task</p>
+                      <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
+                        Assign Users
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {task.assignees.map(a => {
+                        const initials = a.userName
+                          ? a.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                          : '?';
+                        return (
+                          <div key={a.userId} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                            <div className="flex items-center gap-3">
+                              <span className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-sm font-bold flex items-center justify-center flex-shrink-0">
+                                {initials}
+                              </span>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white text-sm">{a.userName}</p>
+                                {a.userEmail && <p className="text-xs text-gray-500 dark:text-gray-400">{a.userEmail}</p>}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {a.role && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                  {a.role}
+                                </span>
+                              )}
+                              {a.assignedByName && (
+                                <p className="text-xs text-gray-400 mt-0.5">by {a.assignedByName}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* COMMENTS TAB */}
             {activeTab === 'comments' && <CommentsTab taskId={taskId} />}
@@ -722,7 +787,7 @@ export function TaskDetail() {
                     <p className="font-medium text-gray-900 dark:text-white">{formatShort(task.dueDate)}</p>
                   </div>
                 )}
-                {task?.estimatedHours && (
+                {task?.estimatedHours > 0 && (
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Estimated Hours</p>
                     <p className="font-medium text-gray-900 dark:text-white">{task.estimatedHours}h</p>
