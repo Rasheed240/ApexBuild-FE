@@ -4,7 +4,7 @@ import {
   Calendar, User, Users, Folder, ChevronRight, AlertCircle, CheckCircle,
   Clock, FileText, Image as ImageIcon, Video, Paperclip, Upload, TrendingUp,
   Edit2, MessageSquare, CheckSquare, Plus, Activity, Layers, Mic, Flag,
-  HardHat, XCircle, ThumbsUp, ThumbsDown, Send, Loader,
+  HardHat, XCircle, ThumbsUp, ThumbsDown, Send, Loader, LayoutGrid, List,
 } from 'lucide-react';
 import { TaskFormModal } from '../components/tasks/TaskFormModal';
 import api from '../services/api';
@@ -124,20 +124,83 @@ function ReviewChainCard({ update }) {
 }
 
 // ─── Updates Tab ─────────────────────────────────────────────────────────────
-function UpdatesTab({ taskId, task }) {
+function UpdatesTab({ taskId, task, onTaskRefresh }) {
   const { user } = useAuth();
-  const [updates,  setUpdates]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [reviewing, setReviewing] = useState(null);
-  const [feedback, setFeedback] = useState('');
-  const [error,    setError]    = useState('');
+  const mediaInputRef = useRef(null);
 
-  useEffect(() => {
+  const [updates,   setUpdates]   = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [reviewing, setReviewing] = useState(null);
+  const [feedback,  setFeedback]  = useState('');
+  const [error,     setError]     = useState('');
+
+  // Inline submit form state
+  const [showSubmitForm,    setShowSubmitForm]    = useState(false);
+  const [submitDescription, setSubmitDescription] = useState('');
+  const [submitProgress,    setSubmitProgress]    = useState(task?.progress ?? 0);
+  const [submitMedia,       setSubmitMedia]       = useState({ urls: [], types: [] });
+  const [uploadingMedia,    setUploadingMedia]    = useState(false);
+  const [submitting,        setSubmitting]        = useState(false);
+  const [submitError,       setSubmitError]       = useState('');
+
+  const fetchUpdates = () => {
+    setLoading(true);
     taskService.getTaskUpdates(taskId)
-      .then(data => setUpdates(Array.isArray(data) ? data : data?.updates || []))
+      .then(data => {
+        const list = data?.updates || data?.Updates || (Array.isArray(data) ? data : []);
+        setUpdates(list);
+      })
       .catch(() => setUpdates([]))
       .finally(() => setLoading(false));
-  }, [taskId]);
+  };
+
+  useEffect(() => { fetchUpdates(); }, [taskId]);
+
+  const handleMediaUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploadingMedia(true);
+    setSubmitError('');
+    try {
+      const results = await Promise.all(files.map(async (f) => {
+        const res = await uploadTaskMedia(taskId, f, f.type.startsWith('image/') ? 'image' : f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : 'document');
+        return { url: res.url, type: f.type.startsWith('image/') ? 'image' : f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : 'document' };
+      }));
+      setSubmitMedia(prev => ({
+        urls: [...prev.urls, ...results.map(r => r.url)],
+        types: [...prev.types, ...results.map(r => r.type)],
+      }));
+    } catch (e) {
+      setSubmitError('Media upload failed: ' + (e.response?.data?.message || e.message));
+    } finally {
+      setUploadingMedia(false);
+      if (mediaInputRef.current) mediaInputRef.current.value = '';
+    }
+  };
+
+  const handleSubmitUpdate = async () => {
+    if (!submitDescription.trim()) { setSubmitError('Description is required.'); return; }
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await taskService.submitTaskUpdate(taskId, {
+        description: submitDescription,
+        progressPercentage: Number(submitProgress),
+        mediaUrls: submitMedia.urls,
+        mediaTypes: submitMedia.types,
+      });
+      setShowSubmitForm(false);
+      setSubmitDescription('');
+      setSubmitProgress(task?.progress ?? 0);
+      setSubmitMedia({ urls: [], types: [] });
+      fetchUpdates();
+      onTaskRefresh?.();
+    } catch (e) {
+      setSubmitError(e.response?.data?.message || 'Submit failed. Try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleReview = async (updateId, type, approved) => {
     setError('');
@@ -147,14 +210,9 @@ function UpdatesTab({ taskId, task }) {
       else if (type === 'supervisor')   await taskService.reviewBySupervisor(updateId, approved, feedbackText);
       else                              await taskService.reviewByAdmin(updateId, approved, feedbackText);
 
-      setUpdates(prev => prev.map(u => u.id === updateId ? {
-        ...u,
-        status: approved
-          ? (type === 'contractorAdmin' ? UPDATE_STATUS.ContractorAdminApproved : type === 'supervisor' ? UPDATE_STATUS.SupervisorApproved : UPDATE_STATUS.AdminApproved)
-          : (type === 'contractorAdmin' ? UPDATE_STATUS.ContractorAdminRejected : type === 'supervisor' ? UPDATE_STATUS.SupervisorRejected : UPDATE_STATUS.AdminRejected),
-      } : u));
       setReviewing(null);
       setFeedback('');
+      fetchUpdates();
     } catch (e) {
       setError(e.response?.data?.message || 'Review failed');
     }
@@ -164,23 +222,101 @@ function UpdatesTab({ taskId, task }) {
 
   return (
     <div className="space-y-4">
+      {/* ── Inline Submit Form ── */}
+      {!showSubmitForm ? (
+        <Button className="w-full gap-2" onClick={() => setShowSubmitForm(true)}>
+          <Send className="h-4 w-4" /> Submit Progress Update
+        </Button>
+      ) : (
+        <Card className="border-2 border-primary-200 dark:border-primary-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Send className="h-4 w-4 text-primary-600" /> New Progress Update
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {submitError && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm text-red-700 dark:text-red-300">{submitError}</div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Work description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={submitDescription}
+                onChange={e => setSubmitDescription(e.target.value)}
+                rows={4}
+                placeholder="Describe what you've accomplished, challenges faced, and results…"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Progress: <span className="font-bold text-primary-600">{submitProgress}%</span>
+              </label>
+              <input type="range" min={0} max={100} step={5} value={submitProgress}
+                onChange={e => setSubmitProgress(e.target.value)}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700 accent-primary-600"
+              />
+              <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                {[0,25,50,75,100].map(v => <span key={v}>{v}%</span>)}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Attach photos / videos / audio
+              </label>
+              <button type="button"
+                onClick={() => mediaInputRef.current?.click()}
+                disabled={uploadingMedia}
+                className="flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors disabled:opacity-50">
+                {uploadingMedia
+                  ? <><Loader className="h-4 w-4 animate-spin" /> Uploading…</>
+                  : <><Upload className="h-4 w-4" /> Choose files</>}
+              </button>
+              <input ref={mediaInputRef} type="file" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                className="hidden" onChange={handleMediaUpload} />
+              {submitMedia.urls.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {submitMedia.urls.map((url, i) => {
+                    const t = submitMedia.types[i] || 'document';
+                    if (t === 'image') return <img key={i} src={url} alt="" className="h-16 w-16 object-cover rounded-lg" />;
+                    if (t === 'video') return <video key={i} src={url} className="h-16 w-16 rounded-lg" />;
+                    return <div key={i} className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded"><Paperclip className="h-3 w-3" /> File {i+1}</div>;
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button className="flex-1 gap-1" disabled={submitting || !submitDescription.trim()} onClick={handleSubmitUpdate}>
+                {submitting ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {submitting ? 'Submitting…' : 'Submit for Review'}
+              </Button>
+              <Button variant="outline" onClick={() => { setShowSubmitForm(false); setSubmitError(''); }}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {error && <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm text-red-700 dark:text-red-300">{error}</div>}
 
       {updates.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Activity className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-500 dark:text-gray-400">No progress updates yet</p>
+            <p className="text-gray-500 dark:text-gray-400">No progress updates yet. Submit the first one above.</p>
           </CardContent>
         </Card>
       ) : (
         updates.map(u => {
           const statusLabel = UPDATE_STATUS_LABELS[u.status] || u.status;
-          const isSubmitted      = u.status === UPDATE_STATUS.Submitted;
           const isUnderCA        = u.status === UPDATE_STATUS.UnderContractorAdminReview;
           const isUnderSupervisor= u.status === UPDATE_STATUS.UnderSupervisorReview;
           const isUnderAdmin     = u.status === UPDATE_STATUS.UnderAdminReview;
           const isFullyApproved  = u.status === UPDATE_STATUS.AdminApproved;
+          const isRejected       = u.status === UPDATE_STATUS.ContractorAdminRejected
+                                || u.status === UPDATE_STATUS.SupervisorRejected
+                                || u.status === UPDATE_STATUS.AdminRejected;
 
           const canReviewAsCA    = isUnderCA;
           const canReviewAsSup   = isUnderSupervisor;
@@ -198,9 +334,9 @@ function UpdatesTab({ taskId, task }) {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-primary-600">{u.progressPercentage}%</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      isFullyApproved ? 'bg-green-100 text-green-700' :
-                      u.status >= UPDATE_STATUS.ContractorAdminRejected && u.status <= UPDATE_STATUS.AdminRejected && (u.status === 4 || u.status === 7 || u.status === 10) ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
+                      isFullyApproved ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      isRejected ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                     }`}>
                       {statusLabel}
                     </span>
@@ -212,16 +348,14 @@ function UpdatesTab({ taskId, task }) {
 
                 {/* Media */}
                 {u.mediaUrls && u.mediaUrls.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      {u.mediaUrls.map((url, i) => {
-                        const type = u.mediaTypes?.[i] || 'image';
-                        if (type === 'image') return <img key={i} src={url} alt="" className="h-24 w-24 object-cover rounded-lg" />;
-                        if (type === 'video') return <video key={i} src={url} className="h-24 w-24 rounded-lg" controls />;
-                        if (type === 'audio') return <audio key={i} src={url} controls className="w-full" />;
-                        return <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-primary-600 underline"><Paperclip className="h-3 w-3" /> Document {i + 1}</a>;
-                      })}
-                    </div>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {u.mediaUrls.map((url, i) => {
+                      const type = u.mediaTypes?.[i] || 'image';
+                      if (type === 'image') return <img key={i} src={url} alt="" className="h-24 w-24 object-cover rounded-lg" />;
+                      if (type === 'video') return <video key={i} src={url} className="h-24 w-24 rounded-lg" controls />;
+                      if (type === 'audio') return <audio key={i} src={url} controls className="w-full" />;
+                      return <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-primary-600 underline"><Paperclip className="h-3 w-3" /> Document {i + 1}</a>;
+                    })}
                   </div>
                 )}
 
@@ -245,7 +379,7 @@ function UpdatesTab({ taskId, task }) {
                             onClick={() => handleReview(u.id, canReviewAsCA ? 'contractorAdmin' : canReviewAsSup ? 'supervisor' : 'admin', true)}>
                             <ThumbsUp className="h-3 w-3" /> Approve
                           </Button>
-                          <Button size="sm" variant="outline" className="flex-1 gap-1 text-red-600 border-red-300 hover:bg-red-50"
+                          <Button size="sm" variant="outline" className="flex-1 gap-1 text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
                             onClick={() => handleReview(u.id, canReviewAsCA ? 'contractorAdmin' : canReviewAsSup ? 'supervisor' : 'admin', false)}>
                             <ThumbsDown className="h-3 w-3" /> Reject
                           </Button>
@@ -266,6 +400,79 @@ function UpdatesTab({ taskId, task }) {
         })
       )}
     </div>
+  );
+}
+
+// ─── Assignees Tab ────────────────────────────────────────────────────────────
+function AssigneesTab({ assignees, onAssign }) {
+  const [view, setView] = useState('list');
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" /> Assigned Users
+            {assignees.length > 0 && (
+              <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({assignees.length})</span>
+            )}
+          </CardTitle>
+          {assignees.length > 0 && (
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button onClick={() => setView('list')} className={`p-1.5 rounded transition-colors ${view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+                <List className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={() => setView('grid')} className={`p-1.5 rounded transition-colors ${view === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {assignees.length === 0 ? (
+          <div className="text-center py-10">
+            <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">No users assigned to this task</p>
+            <Button size="sm" variant="outline" onClick={onAssign}>Assign Users</Button>
+          </div>
+        ) : view === 'list' ? (
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {assignees.map(a => {
+              const initials = a.userName ? a.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+              return (
+                <div key={a.userId} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-sm font-bold flex items-center justify-center flex-shrink-0">{initials}</span>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm">{a.userName}</p>
+                      {a.userEmail && <p className="text-xs text-gray-500 dark:text-gray-400">{a.userEmail}</p>}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {a.role && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{a.role}</span>}
+                    {a.assignedByName && <p className="text-xs text-gray-400 mt-0.5">by {a.assignedByName}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {assignees.map(a => {
+              const initials = a.userName ? a.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+              return (
+                <div key={a.userId} className="flex flex-col items-center text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <span className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-base font-bold flex items-center justify-center mb-2">{initials}</span>
+                  <p className="font-medium text-gray-900 dark:text-white text-sm leading-tight">{a.userName}</p>
+                  {a.userEmail && <p className="text-xs text-gray-400 truncate w-full mt-0.5">{a.userEmail}</p>}
+                  {a.role && <span className="mt-2 text-[10px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">{a.role}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -336,6 +543,77 @@ function CommentsTab({ taskId }) {
         ))
       )}
     </div>
+  );
+}
+
+// ─── Subtasks Tab ─────────────────────────────────────────────────────────────
+function SubtasksTab({ subtasks, onAdd }) {
+  const [view, setView] = useState('list');
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2"><Layers className="h-5 w-5" /> Subtasks ({subtasks.length})</CardTitle>
+          <div className="flex items-center gap-2">
+            {subtasks.length > 0 && (
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button onClick={() => setView('list')} className={`p-1.5 rounded transition-colors ${view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+                  <List className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setView('grid')} className={`p-1.5 rounded transition-colors ${view === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+            <Button size="sm" onClick={onAdd} className="gap-1"><Plus className="h-3 w-3" /> Add</Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {subtasks.length === 0 ? (
+          <div className="text-center py-10">
+            <Layers className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-gray-500 text-sm mb-3">No subtasks yet</p>
+            <Button size="sm" variant="outline" onClick={onAdd}>Create First Subtask</Button>
+          </div>
+        ) : view === 'list' ? (
+          <div className="space-y-2">
+            {subtasks.map(st => (
+              <Link key={st.id} to={`/tasks/${st.id}`}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm text-gray-900 dark:text-white group-hover:text-primary-600 truncate">{st.title}</p>
+                  {st.description && <p className="text-xs text-gray-500 line-clamp-1">{st.description}</p>}
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${TASK_STATUS_COLORS[st.status] || ''}`}>{TASK_STATUS_LABELS[st.status] || st.status}</span>
+                  <span className="text-xs font-medium text-gray-500">{st.progress}%</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {subtasks.map(st => (
+              <Link key={st.id} to={`/tasks/${st.id}`}
+                className="flex flex-col p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-sm transition-all group">
+                <p className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-primary-600 line-clamp-2 mb-2">{st.title}</p>
+                {st.description && <p className="text-xs text-gray-500 line-clamp-2 mb-3 flex-1">{st.description}</p>}
+                <div className="mt-auto space-y-1.5">
+                  <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all" style={{ width: `${st.progress}%` }} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${TASK_STATUS_COLORS[st.status] || ''}`}>{TASK_STATUS_LABELS[st.status] || st.status}</span>
+                    <span className="text-xs font-medium text-gray-500">{st.progress}%</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -540,64 +818,11 @@ export function TaskDetail() {
             )}
 
             {/* UPDATES TAB */}
-            {activeTab === 'updates' && <UpdatesTab taskId={taskId} task={task} />}
+            {activeTab === 'updates' && <UpdatesTab taskId={taskId} task={task} onTaskRefresh={fetchTaskDetails} />}
 
             {/* ASSIGNEES TAB */}
             {activeTab === 'assignees' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Assigned Users
-                    {task?.assignees?.length > 0 && (
-                      <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">
-                        ({task.assignees.length})
-                      </span>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!task?.assignees || task.assignees.length === 0 ? (
-                    <div className="text-center py-10">
-                      <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">No users assigned to this task</p>
-                      <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
-                        Assign Users
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                      {task.assignees.map(a => {
-                        const initials = a.userName
-                          ? a.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                          : '?';
-                        return (
-                          <div key={a.userId} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                            <div className="flex items-center gap-3">
-                              <span className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-sm font-bold flex items-center justify-center flex-shrink-0">
-                                {initials}
-                              </span>
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-white text-sm">{a.userName}</p>
-                                {a.userEmail && <p className="text-xs text-gray-500 dark:text-gray-400">{a.userEmail}</p>}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              {a.role && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                  {a.role}
-                                </span>
-                              )}
-                              {a.assignedByName && (
-                                <p className="text-xs text-gray-400 mt-0.5">by {a.assignedByName}</p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <AssigneesTab assignees={task?.assignees || []} onAssign={() => setIsEditModalOpen(true)} />
             )}
 
             {/* COMMENTS TAB */}
@@ -689,39 +914,7 @@ export function TaskDetail() {
 
             {/* SUBTASKS TAB */}
             {activeTab === 'subtasks' && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2"><Layers className="h-5 w-5" /> Subtasks ({subtasks.length})</CardTitle>
-                    <Button size="sm" onClick={() => setIsSubtaskModalOpen(true)} className="gap-1"><Plus className="h-3 w-3" /> Add</Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {subtasks.length > 0 ? (
-                    <div className="space-y-2">
-                      {subtasks.map(st => (
-                        <Link key={st.id} to={`/tasks/${st.id}`}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group">
-                          <div>
-                            <p className="font-medium text-sm text-gray-900 dark:text-white group-hover:text-primary-600">{st.title}</p>
-                            {st.description && <p className="text-xs text-gray-500 line-clamp-1">{st.description}</p>}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${TASK_STATUS_COLORS[st.status] || ''}`}>{TASK_STATUS_LABELS[st.status] || st.status}</span>
-                            <span className="text-xs font-medium text-gray-500">{st.progress}%</span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10">
-                      <Layers className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                      <p className="text-gray-500 text-sm mb-3">No subtasks yet</p>
-                      <Button size="sm" variant="outline" onClick={() => setIsSubtaskModalOpen(true)}>Create First Subtask</Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SubtasksTab subtasks={subtasks} onAdd={() => setIsSubtaskModalOpen(true)} />
             )}
           </div>
 
@@ -796,14 +989,15 @@ export function TaskDetail() {
               </CardContent>
             </Card>
 
-            {/* Quick Submit Update */}
+            {/* Submit progress update */}
             <Card>
               <CardContent className="pt-4 pb-4">
                 <Button
                   className="w-full gap-1"
-                  onClick={() => navigate(`/tasks/${taskId}/submit`)}
+                  variant="outline"
+                  onClick={() => setActiveTab('updates')}
                 >
-                  <Send className="h-4 w-4" /> Submit Progress Update
+                  <Activity className="h-4 w-4" /> View / Submit Updates
                 </Button>
               </CardContent>
             </Card>

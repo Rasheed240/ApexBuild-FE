@@ -46,10 +46,8 @@ export default function TaskUpdatesReview() {
       const data = await taskService.getPendingUpdates({
         pageNumber: page,
         pageSize: 20,
-        searchTerm: searchTerm || undefined,
-        filterByStatus: statusFilter || undefined,
       });
-      const list = data?.updates || data?.Updates || (Array.isArray(data) ? data : []);
+      const list = data?.items || data?.Items || (Array.isArray(data) ? data : []);
       setUpdates(list);
       setTotal(data?.totalCount ?? data?.TotalCount ?? list.length);
     } catch {
@@ -176,7 +174,7 @@ export default function TaskUpdatesReview() {
 
                       {/* Meta row */}
                       <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1"><User className="h-3 w-3" /> {update.submittedByUserName || update.submittedBy?.name || '—'}</span>
+                        <span className="flex items-center gap-1"><User className="h-3 w-3" /> {update.submittedByName || update.submittedByUserName || '—'}</span>
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {formatTimeAgo(update.submittedAt || update.SubmittedAt)}</span>
                         <span>Progress: <span className="font-semibold text-primary-600">{update.progressPercentage ?? update.ProgressPercentage ?? 0}%</span></span>
                         {(update.mediaUrls || update.media)?.length > 0 && (
