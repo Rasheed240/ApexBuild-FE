@@ -20,22 +20,26 @@ import {
   Search,
   CreditCard,
   Loader2,
-  Plus
+  Plus,
+  HardHat,
+  Flag,
+  Layers,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useOrganizations } from '../../contexts/OrganizationContext';
 import { notificationService } from '../../services/notificationService';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'My Tasks', href: '/my-tasks', icon: ListChecks },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
-  { name: 'Reviews', href: '/reviews', icon: Check },
-  { name: 'Organizations', href: '/organizations', icon: Building2 },
-  { name: 'Members', href: '/members', icon: Users },
-  { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Profile', href: '/profile', icon: User },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Dashboard',      href: '/dashboard',      icon: LayoutDashboard },
+  { name: 'My Tasks',       href: '/my-tasks',       icon: ListChecks      },
+  { name: 'Reviews',        href: '/reviews',        icon: ClipboardCheck  },
+  { name: 'Projects',       href: '/projects',       icon: FolderKanban    },
+  { name: 'Organizations',  href: '/organizations',  icon: Building2       },
+  { name: 'Members',        href: '/members',        icon: Users           },
+  { name: 'Subscriptions',  href: '/subscriptions',  icon: CreditCard      },
+  { name: 'Notifications',  href: '/notifications',  icon: Bell            },
+  { name: 'Profile',        href: '/profile',        icon: User            },
+  { name: 'Settings',       href: '/settings',       icon: Settings        },
 ];
 
 export const DashboardLayout = ({ children }) => {
@@ -213,7 +217,7 @@ export const DashboardLayout = ({ children }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar" aria-label="Main navigation">
           {navigation.map((item) => {
             const isActive = location.pathname.startsWith(item.href);
             return (
@@ -252,6 +256,7 @@ export const DashboardLayout = ({ children }) => {
               onClick={handleLogout}
               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               title="Logout"
+              aria-label="Log out"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -266,6 +271,7 @@ export const DashboardLayout = ({ children }) => {
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Open sidebar menu"
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -278,6 +284,7 @@ export const DashboardLayout = ({ children }) => {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={handleSearchChange}
+                aria-label="Search navigation"
                 onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
@@ -290,6 +297,7 @@ export const DashboardLayout = ({ children }) => {
               <button
                 className="relative p-2 text-gray-500 hover:text-indigo-600"
                 onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
               >
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
@@ -303,7 +311,7 @@ export const DashboardLayout = ({ children }) => {
         </div>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 w-full">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 w-full" role="main">
           {children}
         </main>
       </div>
