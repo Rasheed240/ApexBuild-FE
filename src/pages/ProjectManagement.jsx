@@ -13,6 +13,7 @@ import {
   AlertTriangle, Users, Calendar, Target, Loader, MessageSquare, TrendingUp,
   Image as ImageIcon, Upload, Building2, Milestone, Briefcase, Flag,
   MapPin, DollarSign, BarChart2, HardHat, Layers, Edit2, ExternalLink,
+  LayoutGrid, List,
 } from 'lucide-react';
 
 const TABS = [
@@ -210,7 +211,7 @@ function TasksTab({ projectId, navigate }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedTask, setExpandedTask] = useState(null);
+  const [viewMode, setViewMode] = useState('list');
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -236,12 +237,119 @@ function TasksTab({ projectId, navigate }) {
     if (e.key === 'Enter') fetchTasks();
   };
 
+  const TaskListCard = ({ task }) => {
+    const days = daysUntil(task.dueDate);
+    const isOverdue = days !== null && days < 0;
+    return (
+      <Card className="hover:shadow-md transition-shadow">
+        <CardContent className="pt-5">
+          <div className="flex items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-mono text-gray-400">{task.code}</span>
+                {task.contractorName && (
+                  <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                    {task.contractorName}
+                  </span>
+                )}
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white truncate">{task.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {task.departmentName} · {task.assignedToUserName || 'Unassigned'}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TASK_STATUS_COLORS[task.status] || ''}`}>
+                {TASK_STATUS_LABELS[task.status] || task.status}
+              </span>
+              <span className={`text-xs font-medium ${PRIORITY_COLORS[task.priority] || ''}`}>
+                {PRIORITY_LABELS[task.priority] || ''} Priority
+              </span>
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Progress</span>
+              <span className="font-medium">{Math.round(task.progress || 0)}%</span>
+            </div>
+            <ProgressBar value={task.progress} />
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            {task.dueDate ? (
+              <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
+                <Calendar className="h-3 w-3" />
+                {formatDate(task.dueDate)}
+                {days !== null && <span>({isOverdue ? `${Math.abs(days)}d overdue` : `${days}d left`})</span>}
+              </span>
+            ) : <span />}
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${task.id}`)} className="text-xs gap-1">
+              View Details <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const TaskGridCard = ({ task }) => {
+    const days = daysUntil(task.dueDate);
+    const isOverdue = days !== null && days < 0;
+    return (
+      <Card className="hover:shadow-md transition-shadow h-full flex flex-col">
+        <CardContent className="pt-4 flex flex-col flex-1">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-mono text-gray-400 block mb-0.5">{task.code}</span>
+              <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-snug line-clamp-2">{task.title}</h3>
+            </div>
+            <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${TASK_STATUS_COLORS[task.status] || ''}`}>
+              {TASK_STATUS_LABELS[task.status] || task.status}
+            </span>
+          </div>
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 truncate">{task.departmentName}</p>
+
+          {task.contractorName && (
+            <span className="inline-block text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full mb-2 w-fit">
+              {task.contractorName}
+            </span>
+          )}
+
+          <div className="mt-auto space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between text-xs">
+              <span className={`font-medium ${PRIORITY_COLORS[task.priority] || ''}`}>
+                {PRIORITY_LABELS[task.priority] || ''} Priority
+              </span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{Math.round(task.progress || 0)}%</span>
+            </div>
+            <ProgressBar value={task.progress} />
+            {task.dueDate && (
+              <p className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-600' : 'text-gray-400'}`}>
+                <Calendar className="h-3 w-3" />
+                {formatDate(task.dueDate)}
+                {days !== null && <span>({isOverdue ? `${Math.abs(days)}d overdue` : `${days}d left`})</span>}
+              </p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs gap-1"
+              onClick={() => navigate(`/tasks/${task.id}`)}
+            >
+              View Details <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
       <Card>
         <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -272,6 +380,23 @@ function TasksTab({ projectId, navigate }) {
               <option value="3">High</option>
               <option value="4">Critical</option>
             </select>
+            {/* View toggle */}
+            <div className="flex gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                title="List view"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                title="Grid view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+            </div>
             <Button variant="outline" size="sm" onClick={() => navigate(`/tasks/new?projectId=${projectId}`)} className="gap-1">
               <Plus className="h-4 w-4" /> New Task
             </Button>
@@ -283,73 +408,14 @@ function TasksTab({ projectId, navigate }) {
         <div className="flex justify-center py-12"><Loader className="h-6 w-6 animate-spin text-primary-600" /></div>
       ) : tasks.length === 0 ? (
         <Card><CardContent className="py-12 text-center text-gray-500 dark:text-gray-400">No tasks found</CardContent></Card>
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {tasks.map(task => <TaskGridCard key={task.id} task={task} />)}
+        </div>
       ) : (
-        tasks.map(task => {
-          const days = daysUntil(task.dueDate);
-          const isOverdue = days !== null && days < 0;
-
-          return (
-            <Card key={task.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-5">
-                <div className="flex items-start gap-4">
-                  {/* Left: info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-gray-400">{task.code}</span>
-                      {task.contractorName && (
-                        <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
-                          {task.contractorName}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{task.title}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                      {task.departmentName} · {task.assignedToUserName || 'Unassigned'}
-                    </p>
-                  </div>
-
-                  {/* Center: status + priority */}
-                  <div className="flex flex-col items-end gap-2">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TASK_STATUS_COLORS[task.status] || ''}`}>
-                      {TASK_STATUS_LABELS[task.status] || task.status}
-                    </span>
-                    <span className={`text-xs font-medium ${PRIORITY_COLORS[task.priority] || ''}`}>
-                      {PRIORITY_LABELS[task.priority] || ''} Priority
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress */}
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Progress</span>
-                    <span className="font-medium">{Math.round(task.progress || 0)}%</span>
-                  </div>
-                  <ProgressBar value={task.progress} />
-                </div>
-
-                {/* Due date + expand */}
-                <div className="flex items-center justify-between mt-3">
-                  {task.dueDate ? (
-                    <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(task.dueDate)}
-                      {days !== null && <span>({isOverdue ? `${Math.abs(days)}d overdue` : `${days}d left`})</span>}
-                    </span>
-                  ) : <span />}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/tasks/${task.id}`)}
-                    className="text-xs gap-1"
-                  >
-                    View Details <ChevronRight className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
+        <div className="space-y-3">
+          {tasks.map(task => <TaskListCard key={task.id} task={task} />)}
+        </div>
       )}
     </div>
   );

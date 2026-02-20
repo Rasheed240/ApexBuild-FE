@@ -191,10 +191,10 @@ export const ProjectsList = () => {
             {projects.map((project) => (
               <Card
                 key={project.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer group"
+                className="hover:shadow-lg transition-shadow cursor-pointer group h-full flex flex-col"
                 onClick={() => navigate(`/projects/${project.id}`)}
               >
-                <CardContent className="pt-6">
+                <CardContent className="pt-6 flex flex-col flex-1">
                   {/* Cover Image */}
                   {project.coverImageUrl && (
                     <div className="mb-4 -mx-6 -mt-6 h-32 bg-gradient-to-br from-primary-400 to-primary-600 rounded-t-lg overflow-hidden">
@@ -206,8 +206,8 @@ export const ProjectsList = () => {
                     </div>
                   )}
 
-                  <div className="space-y-4">
-                    {/* Status */}
+                  {/* Top content — grows to fill available space */}
+                  <div className="flex-1 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-1">
@@ -251,7 +251,10 @@ export const ProjectsList = () => {
                         </div>
                       )}
                     </div>
+                  </div>
 
+                  {/* Bottom: stats + button — always pinned to bottom */}
+                  <div className="mt-4 space-y-4">
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="text-center">
@@ -264,14 +267,14 @@ export const ProjectsList = () => {
                         <p className="text-xs text-gray-600 dark:text-gray-400">Team</p>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center justify-center gap-1">
                           <Users className="h-3 w-3" />
-                          0
+                          {project.userCount ?? 0}
                         </p>
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-gray-600 dark:text-gray-400">Progress</p>
                         <p className="text-sm font-semibold text-primary-600">
                           <TrendingUp className="h-3 w-3 inline" />
-                          0%
+                          {project.overallProgress ?? 0}%
                         </p>
                       </div>
                     </div>
@@ -279,7 +282,7 @@ export const ProjectsList = () => {
                     {/* Action */}
                     <Button
                       variant="outline"
-                      className="w-full gap-2 mt-4 group-hover:border-primary-500 group-hover:text-primary-600"
+                      className="w-full gap-2 group-hover:border-primary-500 group-hover:text-primary-600"
                     >
                       View Details
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
