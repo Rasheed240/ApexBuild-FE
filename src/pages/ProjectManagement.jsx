@@ -8,12 +8,13 @@ import { taskService, TASK_STATUS_LABELS } from '../services/taskService';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { UserDetailModal } from '../components/ui/UserDetailModal';
 import {
   Plus, ChevronRight, Filter, Search, AlertCircle, Clock, CheckCircle,
   AlertTriangle, Users, Calendar, Target, Loader, MessageSquare, TrendingUp,
   Image as ImageIcon, Upload, Building2, Milestone, Briefcase, Flag,
   MapPin, DollarSign, BarChart2, HardHat, Layers, Edit2, ExternalLink,
-  LayoutGrid, List,
+  LayoutGrid, List, X,
 } from 'lucide-react';
 
 const TABS = [
@@ -541,14 +542,25 @@ function MilestonesTab({ projectId, navigate }) {
 // ─── CONTRACTORS TAB ─────────────────────────────────────────────────────────
 function ContractorsTab({ projectId, navigate }) {
   const [contractors, setContractors] = useState([]);
+  const [allMembers, setAllMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedContractor, setSelectedContractor] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
-    contractorService.getByProject(projectId)
-      .then(data => setContractors(Array.isArray(data) ? data : []))
-      .catch(() => setContractors([]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      contractorService.getByProject(projectId).catch(() => []),
+      api.get(`/projects/${projectId}/members`, { params: { pageSize: 200 } })
+         .then(r => r.data?.data?.members || r.data?.members || []).catch(() => []),
+    ]).then(([c, m]) => {
+      setContractors(Array.isArray(c) ? c : []);
+      setAllMembers(Array.isArray(m) ? m : []);
+    }).finally(() => setLoading(false));
   }, [projectId]);
+
+  const contractorMembers = selectedContractor
+    ? allMembers.filter(m => m.contractorName === selectedContractor.companyName)
+    : [];
 
   return (
     <div className="space-y-4">
@@ -573,6 +585,7 @@ function ContractorsTab({ projectId, navigate }) {
           {contractors.map(c => {
             const daysLeft = daysUntil(c.contractEndDate);
             const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14;
+            const memberCount = allMembers.filter(m => m.contractorName === c.companyName).length;
 
             return (
               <Card key={c.id} className="hover:shadow-md transition-shadow">
@@ -609,15 +622,67 @@ function ContractorsTab({ projectId, navigate }) {
                     variant="outline"
                     size="sm"
                     className="w-full gap-1"
-                    onClick={() => navigate(`/projects/${projectId}/contractors`)}
+                    onClick={() => setSelectedContractor(c)}
                   >
-                    <ExternalLink className="h-3 w-3" /> View Details
+                    <Users className="h-3 w-3" /> View Members ({memberCount})
                   </Button>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+      )}
+
+      {/* Contractor members modal */}
+      {selectedContractor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={e => e.target === e.currentTarget && setSelectedContractor(null)}
+        >
+          <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{selectedContractor.companyName}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{contractorMembers.length} member{contractorMembers.length !== 1 ? 's' : ''}</p>
+              </div>
+              <button onClick={() => setSelectedContractor(null)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5">
+              {contractorMembers.length === 0 ? (
+                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+                  <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                  <p>No members assigned to this contractor</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {contractorMembers.map(m => (
+                    <button
+                      key={m.workInfoId}
+                      onClick={() => setSelectedUserId(m.userId)}
+                      className="text-left flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 hover:shadow-sm transition-all group"
+                    >
+                      <MemberAvatar name={m.fullName} imageUrl={m.profileImageUrl} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{m.fullName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{m.position}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{m.email}</p>
+                      </div>
+                      <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full ${m.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500'}`}>
+                        {m.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedUserId && (
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
       )}
     </div>
   );
@@ -626,14 +691,25 @@ function ContractorsTab({ projectId, navigate }) {
 // ─── DEPARTMENTS TAB ─────────────────────────────────────────────────────────
 function DepartmentsTab({ projectId, navigate }) {
   const [departments, setDepartments] = useState([]);
+  const [allMembers, setAllMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
-    departmentService.getByProject(projectId)
-      .then(data => setDepartments(Array.isArray(data) ? data : []))
-      .catch(() => setDepartments([]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      departmentService.getByProject(projectId).catch(() => []),
+      api.get(`/projects/${projectId}/members`, { params: { pageSize: 200 } })
+         .then(r => r.data?.data?.members || r.data?.members || []).catch(() => []),
+    ]).then(([d, m]) => {
+      setDepartments(Array.isArray(d) ? d : []);
+      setAllMembers(Array.isArray(m) ? m : []);
+    }).finally(() => setLoading(false));
   }, [projectId]);
+
+  const deptMembers = selectedDept
+    ? allMembers.filter(m => m.departmentName === selectedDept.name)
+    : [];
 
   return (
     <div className="space-y-4">
@@ -655,36 +731,100 @@ function DepartmentsTab({ projectId, navigate }) {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {departments.map(d => (
-            <Card key={d.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-5">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{d.name}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{d.code}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {d.isOutsourced && (
-                      <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
-                        Outsourced
+          {departments.map(d => {
+            const memberCount = allMembers.filter(m => m.departmentName === d.name).length;
+            return (
+              <Card key={d.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{d.name}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">{d.code}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {d.isOutsourced && (
+                        <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                          Outsourced
+                        </span>
+                      )}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+                        {d.status || 'Active'}
                       </span>
-                    )}
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-                      {d.status || 'Active'}
-                    </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                  {d.supervisorName && <p><span className="text-gray-400">Supervisor:</span> {d.supervisorName}</p>}
-                  {d.specialization && <p><span className="text-gray-400">Specialty:</span> {d.specialization}</p>}
-                  {d.contractorName && <p><span className="text-gray-400">Contractor:</span> {d.contractorName}</p>}
-                  {d.startDate && <p><span className="text-gray-400">Started:</span> {formatDate(d.startDate)}</p>}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1 mb-3">
+                    {d.supervisorName && <p><span className="text-gray-400">Supervisor:</span> {d.supervisorName}</p>}
+                    {d.specialization && <p><span className="text-gray-400">Specialty:</span> {d.specialization}</p>}
+                    {d.contractorName && <p><span className="text-gray-400">Contractor:</span> {d.contractorName}</p>}
+                    {d.startDate && <p><span className="text-gray-400">Started:</span> {formatDate(d.startDate)}</p>}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1"
+                    onClick={() => setSelectedDept(d)}
+                  >
+                    <Users className="h-3 w-3" /> View Members ({memberCount})
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
+      )}
+
+      {/* Department members modal */}
+      {selectedDept && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={e => e.target === e.currentTarget && setSelectedDept(null)}
+        >
+          <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{selectedDept.name}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{deptMembers.length} member{deptMembers.length !== 1 ? 's' : ''}</p>
+              </div>
+              <button onClick={() => setSelectedDept(null)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5">
+              {deptMembers.length === 0 ? (
+                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+                  <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                  <p>No members in this department</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {deptMembers.map(m => (
+                    <button
+                      key={m.workInfoId}
+                      onClick={() => setSelectedUserId(m.userId)}
+                      className="text-left flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 hover:shadow-sm transition-all group"
+                    >
+                      <MemberAvatar name={m.fullName} imageUrl={m.profileImageUrl} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{m.fullName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{m.position}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{m.email}</p>
+                      </div>
+                      <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full ${m.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500'}`}>
+                        {m.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedUserId && (
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
       )}
     </div>
   );
@@ -717,13 +857,15 @@ function MembersTab({ projectId }) {
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
+  const [viewMode, setViewMode] = useState('grid');
   const [totalMembers, setTotalMembers] = useState(0);
   const [activeMembers, setActiveMembers] = useState(0);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const fetchMembers = async (searchTerm = '') => {
     setLoading(true);
     try {
-      const params = { pageSize: 100 };
+      const params = { pageSize: 200 };
       if (searchTerm) params.searchTerm = searchTerm;
       if (activeFilter !== '') params.isActive = activeFilter === 'active';
       const res = await api.get(`/projects/${projectId}/members`, { params });
@@ -740,31 +882,22 @@ function MembersTab({ projectId }) {
 
   useEffect(() => { fetchMembers(search); }, [projectId, activeFilter]);
 
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') fetchMembers(search);
-  };
-
-  // Unique department options from loaded members
   const deptOptions = [...new Set(members.filter(m => m.departmentName).map(m => m.departmentName))].sort();
-
-  // Client-side dept filter (already searched server-side)
-  const displayed = deptFilter
-    ? members.filter(m => m.departmentName === deptFilter)
-    : members;
+  const displayed = deptFilter ? members.filter(m => m.departmentName === deptFilter) : members;
 
   return (
     <div className="space-y-5">
       {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatCard label="Total Members" value={totalMembers} icon={Users} color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
-        <StatCard label="Active"        value={activeMembers} icon={CheckCircle} color="text-green-600" bg="bg-green-50 dark:bg-green-900/20" />
+        <StatCard label="Total Members" value={totalMembers} icon={Users}       color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
+        <StatCard label="Active"        value={activeMembers} icon={CheckCircle} color="text-green-600"  bg="bg-green-50 dark:bg-green-900/20"  />
         <StatCard label="Inactive"      value={totalMembers - activeMembers} icon={AlertCircle} color="text-gray-600" bg="bg-gray-100 dark:bg-gray-700/40" />
       </div>
 
-      {/* Search & Filter Bar */}
+      {/* Toolbar */}
       <Card>
         <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -772,29 +905,34 @@ function MembersTab({ projectId }) {
                 placeholder="Search by name, email, role… (Enter)"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
+                onKeyDown={e => e.key === 'Enter' && fetchMembers(search)}
                 className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             {deptOptions.length > 0 && (
-              <select
-                value={deptFilter}
-                onChange={e => setDeptFilter(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
+              <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">All Departments</option>
                 {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             )}
-            <select
-              value={activeFilter}
-              onChange={e => setActiveFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
+            <select value={activeFilter} onChange={e => setActiveFilter(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            {/* View toggle */}
+            <div className="flex gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
+              <button onClick={() => setViewMode('grid')} title="Grid view"
+                className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button onClick={() => setViewMode('list')} title="List view"
+                className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -812,75 +950,71 @@ function MembersTab({ projectId }) {
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Try adjusting your search or filters</p>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {displayed.map(m => (
-            <Card key={m.workInfoId} className={`hover:shadow-md transition-shadow overflow-hidden ${!m.isActive ? 'opacity-60' : ''}`}>
-              <CardContent className="pt-5 pb-4">
-                {/* Header Row */}
-                <div className="flex items-start gap-3 mb-3">
-                  <MemberAvatar name={m.fullName} imageUrl={m.profileImageUrl} size="lg" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white truncate text-sm">{m.fullName}</h3>
-                      {!m.isActive && (
-                        <span className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Inactive</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{m.email}</p>
-                    <p className="text-xs font-medium text-primary-600 dark:text-primary-400 mt-0.5 truncate">{m.position}</p>
-                  </div>
+            <button
+              key={m.workInfoId}
+              onClick={() => setSelectedUserId(m.userId)}
+              className={`text-left w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-indigo-400 hover:shadow-md transition-all group ${!m.isActive ? 'opacity-60' : ''}`}
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <MemberAvatar name={m.fullName} imageUrl={m.profileImageUrl} size="lg" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{m.fullName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{m.email}</p>
+                  <p className="text-xs font-medium text-primary-600 dark:text-primary-400 mt-0.5 truncate">{m.position}</p>
                 </div>
-
-                {/* Meta Grid */}
-                <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
-                  {m.departmentName && (
-                    <div className="flex items-center gap-2">
-                      <Layers className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{m.departmentName}</span>
-                    </div>
-                  )}
-                  {m.contractorName && (
-                    <div className="flex items-center gap-2">
-                      <HardHat className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{m.contractorName}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                    <span>Joined {formatDate(m.startDate)}</span>
-                    {m.endDate && <span className="text-gray-400">→ {formatDate(m.endDate)}</span>}
-                  </div>
-                  {m.employeeId && (
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                      <span className="font-mono">{m.employeeId}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer Tags */}
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  {m.contractType && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CONTRACT_TYPE_COLORS[m.contractType] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-                      {m.contractType}
-                    </span>
-                  )}
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${m.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
-                    {m.status}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-400">
+                {m.departmentName && <div className="flex items-center gap-2"><Layers className="h-3 w-3 text-gray-400 flex-shrink-0" /><span className="truncate">{m.departmentName}</span></div>}
+                {m.contractorName && <div className="flex items-center gap-2"><HardHat className="h-3 w-3 text-gray-400 flex-shrink-0" /><span className="truncate">{m.contractorName}</span></div>}
+                <div className="flex items-center gap-2"><Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" /><span>Joined {formatDate(m.startDate)}</span></div>
+                {m.employeeId && <div className="flex items-center gap-2"><Briefcase className="h-3 w-3 text-gray-400 flex-shrink-0" /><span className="font-mono">{m.employeeId}</span></div>}
+              </div>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {m.contractType && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CONTRACT_TYPE_COLORS[m.contractType] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>{m.contractType}</span>
+                )}
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${m.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                  {m.status}
+                </span>
+              </div>
+            </button>
           ))}
         </div>
+      ) : (
+        <Card>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {displayed.map(m => (
+              <button
+                key={m.workInfoId}
+                onClick={() => setSelectedUserId(m.userId)}
+                className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group"
+              >
+                <MemberAvatar name={m.fullName} imageUrl={m.profileImageUrl} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{m.fullName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{m.email} · {m.position}</p>
+                  {m.departmentName && <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{m.departmentName}{m.contractorName ? ` · ${m.contractorName}` : ''}</p>}
+                </div>
+                <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full font-medium ${m.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                  {m.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Card>
       )}
 
-      {/* Count footer */}
       {!loading && displayed.length > 0 && (
         <p className="text-center text-xs text-gray-400 dark:text-gray-500">
           Showing {displayed.length} of {totalMembers} member{totalMembers !== 1 ? 's' : ''}
         </p>
+      )}
+
+      {selectedUserId && (
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
       )}
     </div>
   );

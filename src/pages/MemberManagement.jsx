@@ -4,8 +4,8 @@ import { useOrganizations } from '../contexts/OrganizationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { organizationService } from '../services/organizationService';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { Alert } from '../components/ui/Alert';
+import { UserDetailModal } from '../components/ui/UserDetailModal';
 import {
     Users,
     UserPlus,
@@ -14,14 +14,10 @@ import {
     Mail,
     Phone,
     Calendar,
-    X,
-    Eye,
-    Shield,
     CheckCircle2,
     XCircle,
-    Filter,
-    MoreVertical,
-    BadgeCheck
+    LayoutGrid,
+    List,
 } from 'lucide-react';
 import { ProfilePicture } from '../components/ui/ProfilePicture';
 
@@ -35,17 +31,22 @@ export const MemberManagement = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterActive, setFilterActive] = useState(null); // null = all, true = active, false = inactive
-    const [selectedMember, setSelectedMember] = useState(null);
-    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [filterActive, setFilterActive] = useState(null);
+    const [viewMode, setViewMode] = useState('grid');
+    const [selectedUserId, setSelectedUserId] = useState(null);
     const [removing, setRemoving] = useState(false);
 
-    // Permission check: Allow owner or super admin to delete members
     const canDeleteMember = selectedOrganization && user && (
         user.id === selectedOrganization.ownerId ||
         user.role === 'SuperAdmin' ||
         user.roles?.includes('SuperAdmin')
     );
+
+    // Reset search + reload when org changes
+    useEffect(() => {
+        setSearchTerm('');
+        setFilterActive(null);
+    }, [selectedOrganization?.id]);
 
     useEffect(() => {
         if (selectedOrganization) {
@@ -55,7 +56,6 @@ export const MemberManagement = () => {
 
     const loadMembers = async () => {
         if (!selectedOrganization) return;
-
         try {
             setLoading(true);
             setError('');
@@ -77,34 +77,23 @@ export const MemberManagement = () => {
 
     const handleSearch = () => {
         if (!selectedOrganization) return;
-
         setLoading(true);
         organizationService
-            .getMembers(selectedOrganization.id, {
-                isActive: filterActive,
-                searchTerm: searchTerm,
-            })
-            .then((data) => {
-                setMembers(data.members || []);
-            })
-            .catch((err) => {
-                setError(err.response?.data?.message || 'Search failed');
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+            .getMembers(selectedOrganization.id, { isActive: filterActive, searchTerm })
+            .then(data => setMembers(data.members || []))
+            .catch(err => setError(err.response?.data?.message || 'Search failed'))
+            .finally(() => setLoading(false));
     };
 
     const handleRemoveMember = async (userId) => {
         if (!confirm('Are you sure you want to remove this member from the organization?')) return;
-
         try {
             setRemoving(true);
             setError('');
             await organizationService.removeMember(selectedOrganization.id, userId);
             setSuccess('Member removed successfully');
+            setSelectedUserId(null);
             await loadMembers();
-            setShowDetailsModal(false);
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to remove member');
@@ -113,21 +102,13 @@ export const MemberManagement = () => {
         }
     };
 
-    const handleInviteMember = () => {
-        navigate(`/users/invite?orgId=${selectedOrganization?.id}`);
-    };
-
-    const handleViewDetails = (member) => {
-        navigate(`/members/${member.userId}`);
-    };
-
-    const filteredMembers = members.filter((member) => {
+    const filteredMembers = members.filter(member => {
         if (!searchTerm) return true;
-        const search = searchTerm.toLowerCase();
+        const s = searchTerm.toLowerCase();
         return (
-            member.userName?.toLowerCase().includes(search) ||
-            member.email?.toLowerCase().includes(search) ||
-            member.position?.toLowerCase().includes(search)
+            member.userName?.toLowerCase().includes(s) ||
+            member.email?.toLowerCase().includes(s) ||
+            member.position?.toLowerCase().includes(s)
         );
     });
 
@@ -160,7 +141,7 @@ export const MemberManagement = () => {
                         </p>
                     </div>
                     <Button
-                        onClick={handleInviteMember}
+                        onClick={() => navigate(`/users/invite?orgId=${selectedOrganization?.id}`)}
                         size="lg"
                         className="group relative overflow-hidden bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5"
                     >
@@ -173,11 +154,7 @@ export const MemberManagement = () => {
                 </div>
 
                 {/* Alerts */}
-                {error && (
-                    <Alert variant="error" onClose={() => setError('')}>
-                        {error}
-                    </Alert>
-                )}
+                {error && <Alert variant="error" onClose={() => setError('')}>{error}</Alert>}
                 {success && (
                     <Alert variant="success" onClose={() => setSuccess('')}>
                         <div className="flex items-center gap-2">
@@ -189,98 +166,82 @@ export const MemberManagement = () => {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg shadow-gray-200/50 dark:shadow-black/50 border border-gray-100 dark:border-gray-700 hover:border-indigo-500/50 transition-colors group">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Members</p>
-                                <p className="text-4xl font-extrabold text-gray-900 dark:text-white mt-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                    {stats.totalMembers}
-                                </p>
-                            </div>
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
-                                <Users className="h-6 w-6" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg shadow-gray-200/50 dark:shadow-black/50 border border-gray-100 dark:border-gray-700 hover:border-green-500/50 transition-colors group">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active</p>
-                                <p className="text-4xl font-extrabold text-gray-900 dark:text-white mt-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                                    {stats.activeMembers}
-                                </p>
-                            </div>
-                            <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl text-green-600 dark:text-green-400">
-                                <CheckCircle2 className="h-6 w-6" />
+                    {[
+                        { label: 'Total Members', value: stats.totalMembers, icon: Users, color: 'indigo', hover: 'hover:border-indigo-500/50' },
+                        { label: 'Active', value: stats.activeMembers, icon: CheckCircle2, color: 'green', hover: 'hover:border-green-500/50' },
+                        { label: 'Inactive', value: stats.totalMembers - stats.activeMembers, icon: XCircle, color: 'gray', hover: 'hover:border-gray-500/50' },
+                    ].map(({ label, value, icon: Icon, color, hover }) => (
+                        <div key={label} className={`bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 ${hover} transition-colors group`}>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</p>
+                                    <p className={`text-4xl font-extrabold text-gray-900 dark:text-white mt-2 group-hover:text-${color}-600 dark:group-hover:text-${color}-400 transition-colors`}>{value}</p>
+                                </div>
+                                <div className={`p-3 bg-${color}-50 dark:bg-${color}-900/30 rounded-xl text-${color}-600 dark:text-${color}-400`}>
+                                    <Icon className="h-6 w-6" />
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg shadow-gray-200/50 dark:shadow-black/50 border border-gray-100 dark:border-gray-700 hover:border-gray-500/50 transition-colors group">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Inactive</p>
-                                <p className="text-4xl font-extrabold text-gray-900 dark:text-white mt-2 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">
-                                    {stats.totalMembers - stats.activeMembers}
-                                </p>
-                            </div>
-                            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl text-gray-600 dark:text-gray-400">
-                                <XCircle className="h-6 w-6" />
-                            </div>
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
-                {/* Main Content Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-black/50 border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    {/* Toolbar */}
-                    <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                {/* Toolbar */}
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                        {/* Search */}
                         <div className="relative group w-full sm:max-w-md">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search by name, email, or position..."
+                                placeholder="Search by name, email, or position…"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSearch()}
                                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
 
-                        <div className="flex gap-2 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
-                            <button
-                                onClick={() => setFilterActive(null)}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filterActive === null
-                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                                    }`}
-                            >
-                                All
-                            </button>
-                            <button
-                                onClick={() => setFilterActive(true)}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filterActive === true
-                                    ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                                    }`}
-                            >
-                                Active
-                            </button>
-                            <button
-                                onClick={() => setFilterActive(false)}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filterActive === false
-                                    ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                                    }`}
-                            >
-                                Inactive
-                            </button>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            {/* Status filter */}
+                            <div className="flex gap-1 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+                                {[['All', null], ['Active', true], ['Inactive', false]].map(([label, val]) => (
+                                    <button
+                                        key={label}
+                                        onClick={() => setFilterActive(val)}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterActive === val
+                                            ? val === true ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 shadow-sm'
+                                              : val === false ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 shadow-sm'
+                                              : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                        }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* View toggle */}
+                            <div className="flex gap-1 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    title="Grid view"
+                                    className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                >
+                                    <LayoutGrid className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    title="List view"
+                                    className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                >
+                                    <List className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Content */}
+                    <div className="p-6">
                         {loading ? (
                             <div className="flex items-center justify-center py-20">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
@@ -292,199 +253,118 @@ export const MemberManagement = () => {
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No members found</h3>
                                 <p className="text-gray-500 dark:text-gray-400">
-                                    {searchTerm
-                                        ? 'Try adjusting your search criteria.'
-                                        : 'Invite your first team member to get started.'}
+                                    {searchTerm ? 'Try adjusting your search criteria.' : 'Invite your first team member to get started.'}
                                 </p>
                             </div>
+                        ) : viewMode === 'grid' ? (
+                            /* ── Grid View ── */
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {filteredMembers.map(member => (
+                                    <button
+                                        key={member.userId}
+                                        onClick={() => setSelectedUserId(member.userId)}
+                                        className={`text-left bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:border-indigo-400 hover:shadow-md transition-all group ${!member.isActive ? 'opacity-60' : ''}`}
+                                    >
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <ProfilePicture
+                                                src={member.profileImageUrl}
+                                                alt={member.userName}
+                                                size="md"
+                                                className="ring-2 ring-white dark:ring-gray-800 shadow-sm flex-shrink-0"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                    {member.userName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.position || 'Member'}</p>
+                                            </div>
+                                            <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${member.isActive
+                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                                {member.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                            <div className="flex items-center gap-1.5"><Mail className="h-3 w-3 flex-shrink-0" /><span className="truncate">{member.email}</span></div>
+                                            {member.phoneNumber && <div className="flex items-center gap-1.5"><Phone className="h-3 w-3 flex-shrink-0" />{member.phoneNumber}</div>}
+                                            <div className="flex items-center gap-1.5">
+                                                <Calendar className="h-3 w-3 flex-shrink-0" />
+                                                {new Date(member.joinedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         ) : (
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role & Status</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
-                                        <th className="text-right py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {filteredMembers.map((member) => (
-                                        <tr
-                                            key={member.userId}
-                                            className="group hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors"
-                                        >
-                                            <td className="py-4 px-6">
-                                                <div className="flex items-center gap-4">
-                                                    <ProfilePicture
-                                                        src={member.profileImageUrl}
-                                                        alt={member.userName}
-                                                        size="md"
-                                                        className="ring-2 ring-white dark:ring-gray-800 shadow-sm"
-                                                    />
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                                            {member.userName}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                            {member.position || 'Member'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                                        <Mail className="h-3 w-3 text-gray-400" />
-                                                        {member.email}
-                                                    </div>
-                                                    {member.phoneNumber && (
-                                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                                            <Phone className="h-3 w-3 text-gray-400" />
-                                                            {member.phoneNumber}
+                            /* ── List View ── */
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-100 dark:border-gray-700">
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member</th>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
+                                            {canDeleteMember && <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {filteredMembers.map(member => (
+                                            <tr
+                                                key={member.userId}
+                                                onClick={() => setSelectedUserId(member.userId)}
+                                                className="group hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+                                            >
+                                                <td className="py-4 px-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <ProfilePicture src={member.profileImageUrl} alt={member.userName} size="sm" className="ring-2 ring-white dark:ring-gray-800" />
+                                                        <div>
+                                                            <p className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm">{member.userName}</p>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">{member.position || 'Member'}</p>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="flex flex-col items-start gap-2">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${member.isActive
-                                                        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/50'
-                                                        : 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                                                        }`}>
-                                                        <span className={`h-1.5 w-1.5 rounded-full ${member.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <div className="text-sm text-gray-600 dark:text-gray-300">{member.email}</div>
+                                                    {member.phoneNumber && <div className="text-xs text-gray-400 mt-0.5">{member.phoneNumber}</div>}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${member.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                                                         {member.isActive ? 'Active' : 'Inactive'}
                                                     </span>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                                    <Calendar className="h-4 w-4" />
-                                                    {new Date(member.joinedAt).toLocaleDateString(undefined, {
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    })}
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleViewDetails(member)}
-                                                        className="hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30 border-gray-200 dark:border-gray-700"
-                                                        title="View Details"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                    {canDeleteMember && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleRemoveMember(member.userId)}
-                                                            className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 border-gray-200 dark:border-gray-700 text-gray-400"
+                                                </td>
+                                                <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
+                                                    {new Date(member.joinedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                </td>
+                                                {canDeleteMember && (
+                                                    <td className="py-4 px-4 text-right">
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); handleRemoveMember(member.userId); }}
                                                             disabled={removing}
+                                                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                                             title="Remove Member"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                                        </button>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </div>
                 </div>
+
+                <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+                    {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''}
+                </p>
             </div>
 
-            {/* Member Details Modal */}
-            {showDetailsModal && selectedMember && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-blob">
-                        <div className="relative h-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
-                            <button
-                                onClick={() => setShowDetailsModal(false)}
-                                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <div className="px-8 pb-8 relative">
-                            <div className="flex justify-between items-end -mt-12 mb-6">
-                                <ProfilePicture
-                                    src={selectedMember.profileImageUrl}
-                                    alt={selectedMember.userName}
-                                    size="xl"
-                                    className="ring-4 ring-white dark:ring-gray-800 shadow-xl"
-                                />
-                                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${selectedMember.isActive
-                                    ? 'bg-green-50 text-green-700 border-green-200'
-                                    : 'bg-gray-50 text-gray-600 border-gray-200'
-                                    }`}>
-                                    {selectedMember.isActive ? 'ACTIVE ACCOUNT' : 'INACTIVE'}
-                                </div>
-                            </div>
-
-                            <div className="mb-8">
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedMember.userName}</h3>
-                                <p className="text-gray-500 dark:text-gray-400">{selectedMember.email}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6 mb-8">
-                                <div className="space-y-1">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Position</p>
-                                    <div className="flex items-center gap-2">
-                                        <BadgeCheck className="h-5 w-5 text-indigo-500" />
-                                        <p className="font-medium text-gray-900 dark:text-white">{selectedMember.position || 'Member'}</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Joined Date</p>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-5 w-5 text-indigo-500" />
-                                        <p className="font-medium text-gray-900 dark:text-white">
-                                            {new Date(selectedMember.joinedAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="space-y-1 col-span-2">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Phone</p>
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="h-5 w-5 text-indigo-500" />
-                                        <p className="font-medium text-gray-900 dark:text-white">
-                                            {selectedMember.phoneNumber || 'Not provided'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 pt-6 border-t border-gray-100 dark:border-gray-700">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                    onClick={() => setShowDetailsModal(false)}
-                                >
-                                    Close
-                                </Button>
-                                {canDeleteMember && (
-                                    <Button
-                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red500/20"
-                                        onClick={() => handleRemoveMember(selectedMember.userId)}
-                                        disabled={removing}
-                                    >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        {removing ? 'Removing...' : 'Remove Member'}
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {/* User Detail Modal */}
+            {selectedUserId && (
+                <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
             )}
         </div>
     );

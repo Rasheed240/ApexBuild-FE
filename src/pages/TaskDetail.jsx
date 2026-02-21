@@ -17,6 +17,7 @@ import { Badge } from '../components/ui/Badge';
 import { Spinner } from '../components/ui/Spinner';
 import { MediaGallery } from '../components/ui/MediaGallery';
 import { ProfilePicture } from '../components/ui/ProfilePicture';
+import { UserDetailModal } from '../components/ui/UserDetailModal';
 
 const TASK_STATUS_COLORS = {
   NotStarted: 'bg-gray-100 text-gray-700',
@@ -405,46 +406,61 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
 
 // ─── Assignees Tab ────────────────────────────────────────────────────────────
 function AssigneesTab({ assignees, onAssign }) {
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('grid');
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const Avatar = ({ name, size = 'sm' }) => {
+    const initials = name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+    const sz = size === 'lg' ? 'w-12 h-12 text-base' : 'w-9 h-9 text-sm';
+    return (
+      <span className={`${sz} rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 font-bold flex items-center justify-center flex-shrink-0`}>
+        {initials}
+      </span>
+    );
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" /> Assigned Users
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" /> Assigned Users
+              {assignees.length > 0 && (
+                <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({assignees.length})</span>
+              )}
+            </CardTitle>
             {assignees.length > 0 && (
-              <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({assignees.length})</span>
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button onClick={() => setView('list')} className={`p-1.5 rounded transition-colors ${view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+                  <List className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setView('grid')} className={`p-1.5 rounded transition-colors ${view === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
-          </CardTitle>
-          {assignees.length > 0 && (
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-              <button onClick={() => setView('list')} className={`p-1.5 rounded transition-colors ${view === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
-                <List className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => setView('grid')} className={`p-1.5 rounded transition-colors ${view === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        {assignees.length === 0 ? (
-          <div className="text-center py-10">
-            <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">No users assigned to this task</p>
-            <Button size="sm" variant="outline" onClick={onAssign}>Assign Users</Button>
           </div>
-        ) : view === 'list' ? (
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
-            {assignees.map(a => {
-              const initials = a.userName ? a.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
-              return (
-                <div key={a.userId} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+        </CardHeader>
+        <CardContent>
+          {assignees.length === 0 ? (
+            <div className="text-center py-10">
+              <Users className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">No users assigned to this task</p>
+              <Button size="sm" variant="outline" onClick={onAssign}>Assign Users</Button>
+            </div>
+          ) : view === 'list' ? (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {assignees.map(a => (
+                <button
+                  key={a.userId}
+                  onClick={() => setSelectedUserId(a.userId)}
+                  className="w-full text-left flex items-center justify-between py-3 first:pt-0 last:pb-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 -mx-1 px-1 rounded-lg transition-colors group"
+                >
                   <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-sm font-bold flex items-center justify-center flex-shrink-0">{initials}</span>
+                    <Avatar name={a.userName} />
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white text-sm">{a.userName}</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{a.userName}</p>
                       {a.userEmail && <p className="text-xs text-gray-500 dark:text-gray-400">{a.userEmail}</p>}
                     </div>
                   </div>
@@ -452,27 +468,33 @@ function AssigneesTab({ assignees, onAssign }) {
                     {a.role && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{a.role}</span>}
                     {a.assignedByName && <p className="text-xs text-gray-400 mt-0.5">by {a.assignedByName}</p>}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {assignees.map(a => {
-              const initials = a.userName ? a.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
-              return (
-                <div key={a.userId} className="flex flex-col items-center text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-                  <span className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-base font-bold flex items-center justify-center mb-2">{initials}</span>
-                  <p className="font-medium text-gray-900 dark:text-white text-sm leading-tight">{a.userName}</p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {assignees.map(a => (
+                <button
+                  key={a.userId}
+                  onClick={() => setSelectedUserId(a.userId)}
+                  className="flex flex-col items-center text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-indigo-400 hover:shadow-sm transition-all group"
+                >
+                  <Avatar name={a.userName} size="lg" />
+                  <p className="font-medium text-gray-900 dark:text-white text-sm leading-tight mt-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{a.userName}</p>
                   {a.userEmail && <p className="text-xs text-gray-400 truncate w-full mt-0.5">{a.userEmail}</p>}
                   {a.role && <span className="mt-2 text-[10px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">{a.role}</span>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                  {a.assignedByName && <p className="text-[10px] text-gray-400 mt-1">by {a.assignedByName}</p>}
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedUserId && (
+        <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+      )}
+    </>
   );
 }
 
