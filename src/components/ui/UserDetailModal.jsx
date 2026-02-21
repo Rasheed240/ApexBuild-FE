@@ -6,6 +6,8 @@ import {
 import api from '../../services/api';
 import { ProfilePicture } from './ProfilePicture';
 
+// Backend may return status as an integer enum or a string
+const STATUS_LABELS = { 0: 'Active', 1: 'Inactive', 2: 'Suspended', Active: 'Active', Inactive: 'Inactive', Suspended: 'Suspended' };
 const STATUS_COLORS = {
   Active:    'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
   Inactive:  'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600',
@@ -60,6 +62,7 @@ export function UserDetailModal({ userId, onClose }) {
     };
   }, [onClose]);
 
+  const statusLabel = STATUS_LABELS[profile?.status] ?? String(profile?.status ?? '');
   const location = [profile?.city, profile?.state, profile?.country].filter(Boolean).join(', ');
   const dob = profile?.dateOfBirth
     ? new Date(profile.dateOfBirth).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -105,8 +108,8 @@ export function UserDetailModal({ userId, onClose }) {
                   size="xl"
                   className="ring-4 ring-white dark:ring-gray-800 shadow-xl"
                 />
-                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${STATUS_COLORS[profile.status] || STATUS_COLORS.Inactive}`}>
-                  {profile.status?.toUpperCase()}
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${STATUS_COLORS[statusLabel] || STATUS_COLORS.Inactive}`}>
+                  {statusLabel.toUpperCase()}
                 </span>
               </div>
 
