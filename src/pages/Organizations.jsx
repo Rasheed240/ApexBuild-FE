@@ -394,31 +394,28 @@ export const OrganizationsPage = ({ openForm = false }) => {
             <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
               <button
                 onClick={() => setFilterActive(null)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filterActive === null
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterActive === null
                     ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
               >
                 All
               </button>
               <button
                 onClick={() => setFilterActive(true)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filterActive === true
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterActive === true
                     ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
               >
                 Active
               </button>
               <button
                 onClick={() => setFilterActive(false)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filterActive === false
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterActive === false
                     ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
               >
                 Inactive
               </button>
@@ -439,22 +436,20 @@ export const OrganizationsPage = ({ openForm = false }) => {
             <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === 'grid'
+                className={`p-2 rounded-lg transition-all ${viewMode === 'grid'
                     ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
                 title="Grid View"
               >
                 <Grid3x3 className="h-5 w-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === 'list'
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list'
                     ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
                 title="List View"
               >
                 <List className="h-5 w-5" />
@@ -537,28 +532,25 @@ export const OrganizationsPage = ({ openForm = false }) => {
               return (
                 <div
                   key={org.id}
-                  className={`group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border ${
-                    isSelected
+                  className={`group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border ${isSelected
                       ? 'border-indigo-500 shadow-lg shadow-indigo-500/20'
                       : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400'
-                  }`}
+                    }`}
                 >
                   {/* Header Gradient */}
-                  <div className={`h-2 ${
-                    isSelected
+                  <div className={`h-2 ${isSelected
                       ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500'
                       : 'bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 group-hover:from-indigo-500 group-hover:via-purple-500 group-hover:to-pink-500'
-                  } transition-all duration-500`} />
+                    } transition-all duration-500`} />
 
                   <div className="p-4">
                     {/* Org Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex gap-3 items-start flex-1 min-w-0">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md transition-all duration-500 group-hover:scale-105 flex-shrink-0 ${
-                          isSelected
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md transition-all duration-500 group-hover:scale-105 flex-shrink-0 ${isSelected
                             ? 'bg-gradient-to-br from-indigo-500 to-purple-600'
                             : 'bg-gradient-to-br from-gray-600 to-gray-800 group-hover:from-indigo-500 group-hover:to-purple-600'
-                        }`}>
+                          }`}>
                           <Building2 className="h-6 w-6" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -576,11 +568,10 @@ export const OrganizationsPage = ({ openForm = false }) => {
                         </div>
                       </div>
 
-                      <div className={`px-2 py-0.5 rounded-full text-xs font-bold border whitespace-nowrap flex-shrink-0 ${
-                        org.isActive
+                      <div className={`px-2 py-0.5 rounded-full text-xs font-bold border whitespace-nowrap flex-shrink-0 ${org.isActive
                           ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/50'
                           : 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                      }`}>
+                        }`}>
                         {org.isActive ? 'Active' : 'Inactive'}
                       </div>
                     </div>
@@ -614,11 +605,10 @@ export const OrganizationsPage = ({ openForm = false }) => {
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                       <Button
                         size="sm"
-                        className={`w-full font-semibold ${
-                          isSelected
+                        className={`w-full font-semibold ${isSelected
                             ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
                             : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
-                        }`}
+                          }`}
                         onClick={() => selectOrganization(org)}
                       >
                         {isSelected ? (
@@ -676,22 +666,20 @@ export const OrganizationsPage = ({ openForm = false }) => {
                 return (
                   <div
                     key={org.id}
-                    className={`group p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all ${
-                      isSelected ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''
-                    }`}
+                    className={`group p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''
+                      }`}
                   >
-                    <div className="flex items-center justify-between gap-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md ${
-                          isSelected
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md flex-shrink-0 ${isSelected
                             ? 'bg-gradient-to-br from-indigo-500 to-purple-600'
                             : 'bg-gradient-to-br from-gray-600 to-gray-800 group-hover:from-indigo-500 group-hover:to-purple-600'
-                        } transition-all duration-300`}>
+                          } transition-all duration-300`}>
                           <Building2 className="h-6 w-6" />
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
                             <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
                               {org.name}
                             </h3>
@@ -701,11 +689,10 @@ export const OrganizationsPage = ({ openForm = false }) => {
                             {org.isVerified && (
                               <ShieldCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
                             )}
-                            <div className={`px-2 py-0.5 rounded-full text-xs font-bold border whitespace-nowrap ${
-                              org.isActive
+                            <div className={`px-2 py-0.5 rounded-full text-xs font-bold border whitespace-nowrap ${org.isActive
                                 ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400'
                                 : 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400'
-                            }`}>
+                              }`}>
                               {org.isActive ? 'Active' : 'Inactive'}
                             </div>
                           </div>
@@ -717,21 +704,21 @@ export const OrganizationsPage = ({ openForm = false }) => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6 flex-shrink-0">
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:flex-shrink-0">
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="flex items-center gap-1.5">
                             <Users className="h-4 w-4 text-indigo-500" />
                             <span className="font-bold text-gray-900 dark:text-white">{org.memberCount || 0}</span>
-                            <span className="text-gray-500 dark:text-gray-400">members</span>
+                            <span className="text-gray-500 dark:text-gray-400 hidden sm:inline">members</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Layers className="h-4 w-4 text-purple-500" />
                             <span className="font-bold text-gray-900 dark:text-white">{org.departmentCount || 0}</span>
-                            <span className="text-gray-500 dark:text-gray-400">depts</span>
+                            <span className="text-gray-500 dark:text-gray-400 hidden sm:inline">depts</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <Button
                             size="sm"
                             className={isSelected

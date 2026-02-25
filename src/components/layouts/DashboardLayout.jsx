@@ -31,17 +31,17 @@ import { useOrganizations } from '../../contexts/OrganizationContext';
 import { notificationService } from '../../services/notificationService';
 
 const navigation = [
-  { name: 'Dashboard',      href: '/dashboard',      icon: LayoutDashboard },
-  { name: 'My Tasks',       href: '/my-tasks',       icon: ListChecks      },
-  { name: 'Reviews',        href: '/reviews',        icon: ClipboardCheck  },
-  { name: 'Projects',       href: '/projects',       icon: FolderKanban    },
-  { name: 'Organizations',  href: '/organizations',  icon: Building2       },
-  { name: 'Members',        href: '/members',        icon: Users           },
-  { name: 'Subscriptions',  href: '/subscriptions',  icon: CreditCard      },
-  { name: 'Notifications',  href: '/notifications',  icon: Bell            },
-  { name: 'Profile',        href: '/profile',        icon: User            },
-  { name: 'Settings',       href: '/settings',       icon: Settings        },
-  { name: 'User Guide',     href: '/guide',          icon: BookOpen        },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'My Tasks', href: '/my-tasks', icon: ListChecks },
+  { name: 'Reviews', href: '/reviews', icon: ClipboardCheck },
+  { name: 'Projects', href: '/projects', icon: FolderKanban },
+  { name: 'Organizations', href: '/organizations', icon: Building2 },
+  { name: 'Members', href: '/members', icon: Users },
+  { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
+  { name: 'Profile', href: '/profile', icon: User },
+  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'User Guide', href: '/guide', icon: BookOpen },
 ];
 
 export const DashboardLayout = ({ children }) => {
@@ -92,7 +92,7 @@ export const DashboardLayout = ({ children }) => {
 
   const handleNotifClick = async (notif) => {
     setNotificationDropdownOpen(false);
-    try { await notificationService.markAsRead(notif.id); } catch (_) {}
+    try { await notificationService.markAsRead(notif.id); } catch (_) { }
     fetchNotifications();
     if (notif.actionUrl || notif.link) navigate(notif.actionUrl || notif.link);
   };
@@ -294,17 +294,17 @@ export const DashboardLayout = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden w-full relative bg-gray-50 dark:bg-gray-900">
         {/* Top bar */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-4 lg:px-8 shadow-sm shrink-0 z-30">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-3 sm:px-4 lg:px-8 shadow-sm shrink-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
+            className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors p-1"
             aria-label="Open sidebar menu"
           >
             <Menu className="h-6 w-6" />
           </button>
 
-          <div className="flex-1 max-w-xl mx-4">
-            <div className="relative">
+          <div className="hidden sm:flex flex-1 max-w-xl mx-4">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
@@ -317,6 +317,8 @@ export const DashboardLayout = ({ children }) => {
               />
             </div>
           </div>
+          {/* Spacer on mobile so right icons stay right */}
+          <div className="flex-1 sm:hidden" />
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
@@ -342,7 +344,7 @@ export const DashboardLayout = ({ children }) => {
                     onClick={() => setNotificationDropdownOpen(false)}
                   />
                   {/* Panel */}
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col max-h-[480px]">
+                  <div className="absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-80 max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col max-h-[480px]">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                       <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Notifications</h3>

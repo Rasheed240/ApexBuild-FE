@@ -17,7 +17,7 @@ const fmt = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric',
 const timeAgo = (ts) => {
   if (!ts) return '';
   const secs = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (secs < 60)  return `${secs}s ago`;
+  if (secs < 60) return `${secs}s ago`;
   if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
   if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
   return `${Math.floor(secs / 86400)}d ago`;
@@ -53,7 +53,7 @@ export const Dashboard = () => {
     try {
       const params = { isOverdue: true, pageSize: 2 };
       if (selectedOrganization?.id) params.organizationId = selectedOrganization.id;
-      const res  = await api.get('/tasks/my-tasks', { params });
+      const res = await api.get('/tasks/my-tasks', { params });
       const data = res.data?.data ?? res.data;
       const list = data?.tasks || data?.items || data?.Items || (Array.isArray(data) ? data : []);
       if (list.length === 1) {
@@ -78,17 +78,17 @@ export const Dashboard = () => {
       const res = await api.get('/dashboard/stats', { params });
       const d = res.data?.data ?? res.data ?? {};
       setStats({
-        activeProjects:    d.activeProjects    ?? d.ActiveProjects    ?? 0,
-        teamMembers:       d.teamMembers       ?? d.TeamMembers       ?? 0,
-        completedTasks:    d.completedTasks    ?? d.CompletedTasks    ?? 0,
+        activeProjects: d.activeProjects ?? d.ActiveProjects ?? 0,
+        teamMembers: d.teamMembers ?? d.TeamMembers ?? 0,
+        completedTasks: d.completedTasks ?? d.CompletedTasks ?? 0,
         upcomingDeadlines: d.upcomingDeadlines ?? d.UpcomingDeadlines ?? 0,
-        pendingReviews:    d.pendingReviews    ?? d.PendingReviews    ?? 0,
-        totalTasks:        d.totalTasks        ?? d.TotalTasks        ?? 0,
-        overdueTasks:      d.overdueTasks      ?? d.OverdueTasks      ?? 0,
-        inProgressTasks:   d.inProgressTasks   ?? d.InProgressTasks   ?? 0,
-        notStartedTasks:   d.notStartedTasks   ?? d.NotStartedTasks   ?? 0,
-        underReviewTasks:  d.underReviewTasks  ?? d.UnderReviewTasks  ?? 0,
-        rejectedTasks:     d.rejectedTasks     ?? d.RejectedTasks     ?? 0,
+        pendingReviews: d.pendingReviews ?? d.PendingReviews ?? 0,
+        totalTasks: d.totalTasks ?? d.TotalTasks ?? 0,
+        overdueTasks: d.overdueTasks ?? d.OverdueTasks ?? 0,
+        inProgressTasks: d.inProgressTasks ?? d.InProgressTasks ?? 0,
+        notStartedTasks: d.notStartedTasks ?? d.NotStartedTasks ?? 0,
+        underReviewTasks: d.underReviewTasks ?? d.UnderReviewTasks ?? 0,
+        rejectedTasks: d.rejectedTasks ?? d.RejectedTasks ?? 0,
       });
     } catch {
       setStats(null);
@@ -108,7 +108,7 @@ export const Dashboard = () => {
           direction: d.productivity?.changeDirection ?? 'unchanged',
         },
         onTimeDelivery: Math.round(d.onTimeDelivery?.percentageOnTime ?? 0),
-        taskCompletion: Math.round(d.taskCompletion?.completionRate    ?? 0),
+        taskCompletion: Math.round(d.taskCompletion?.completionRate ?? 0),
       });
     } catch {
       setMetrics(null);
@@ -161,17 +161,17 @@ export const Dashboard = () => {
   const pct = (n) => totalForBreakdown > 0 ? Math.round((n / totalForBreakdown) * 100) : 0;
 
   const statCards = s ? [
-    { name: 'Active Projects',     value: s.activeProjects,    icon: Building2,     color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20',   bar: 'from-blue-500 to-blue-600'   },
-    { name: 'Team Members',        value: s.teamMembers,       icon: Users,         color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/20', bar: 'from-green-500 to-green-600' },
-    { name: 'Completed Tasks',     value: s.completedTasks,    icon: CheckCircle,   color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', bar: 'from-purple-500 to-purple-600' },
-    { name: 'Pending Reviews',     value: s.pendingReviews,    icon: AlertCircle,   color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', bar: 'from-orange-500 to-orange-600', link: '/reviews' },
+    { name: 'Active Projects', value: s.activeProjects, icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', bar: 'from-blue-500 to-blue-600' },
+    { name: 'Team Members', value: s.teamMembers, icon: Users, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', bar: 'from-green-500 to-green-600' },
+    { name: 'Completed Tasks', value: s.completedTasks, icon: CheckCircle, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', bar: 'from-purple-500 to-purple-600' },
+    { name: 'Pending Reviews', value: s.pendingReviews, icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', bar: 'from-orange-500 to-orange-600', link: '/reviews' },
   ] : [];
 
   const activityIcon = (type) => {
-    if (type === 'project')      return { Icon: Building2, color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/30'   };
+    if (type === 'project') return { Icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' };
     if (type === 'task_update' || type === 'task') return { Icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' };
     if (type === 'notification') return { Icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' };
-    if (type === 'user')         return { Icon: Users, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' };
+    if (type === 'user') return { Icon: Users, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' };
     return { Icon: Activity, color: 'text-gray-600', bg: 'bg-gray-100 dark:bg-gray-700' };
   };
 
@@ -186,47 +186,47 @@ export const Dashboard = () => {
   })();
 
   const roleLabelMap = {
-    superAdmin:      'Super Admin',
-    admin:           'Administrator',
-    supervisor:      'Supervisor',
+    superAdmin: 'Super Admin',
+    admin: 'Administrator',
+    supervisor: 'Supervisor',
     contractorAdmin: 'Contractor Admin',
-    fieldWorker:     'Field Worker',
+    fieldWorker: 'Field Worker',
   };
 
   const roleActions = {
     superAdmin: [
-      { to: '/projects/new',   Icon: FolderKanban,  label: 'New Project',     color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/30'   },
-      { to: '/users/invite',   Icon: UserPlus,       label: 'Invite Member',   color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/30' },
-      { to: '/organizations',  Icon: Building2,      label: 'Organisations',   color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-      { to: '/subscriptions',  Icon: CreditCard,     label: 'Subscriptions',   color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' },
-      { to: '/tasks',          Icon: ClipboardList,  label: 'All Tasks',       color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-      { to: '/reviews',        Icon: ShieldCheck,    label: 'All Reviews',     color: 'text-red-600',    bg: 'bg-red-50 dark:bg-red-900/30'     },
+      { to: '/projects/new', Icon: FolderKanban, label: 'New Project', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+      { to: '/users/invite', Icon: UserPlus, label: 'Invite Member', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+      { to: '/organizations', Icon: Building2, label: 'Organisations', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+      { to: '/subscriptions', Icon: CreditCard, label: 'Subscriptions', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' },
+      { to: '/tasks', Icon: ClipboardList, label: 'All Tasks', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+      { to: '/reviews', Icon: ShieldCheck, label: 'All Reviews', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/30' },
     ],
     admin: [
-      { to: '/projects/new',   Icon: FolderKanban,  label: 'New Project',     color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/30'   },
-      { to: '/users/invite',   Icon: UserPlus,       label: 'Invite Member',   color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/30' },
-      { to: '/tasks',          Icon: ClipboardList,  label: 'View Tasks',      color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' },
-      { to: '/reviews',        Icon: ShieldCheck,    label: 'Reviews',         color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-      { to: '/projects',       Icon: Building2,      label: 'Projects',        color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-      { to: '/members',        Icon: Users,          label: 'Team Members',    color: 'text-teal-600',   bg: 'bg-teal-50 dark:bg-teal-900/30'   },
+      { to: '/projects/new', Icon: FolderKanban, label: 'New Project', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+      { to: '/users/invite', Icon: UserPlus, label: 'Invite Member', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+      { to: '/tasks', Icon: ClipboardList, label: 'View Tasks', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' },
+      { to: '/reviews', Icon: ShieldCheck, label: 'Reviews', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+      { to: '/projects', Icon: Building2, label: 'Projects', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+      { to: '/members', Icon: Users, label: 'Team Members', color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-900/30' },
     ],
     supervisor: [
-      { to: '/tasks',          Icon: ClipboardList,  label: 'My Tasks',        color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/30'   },
-      { to: '/reviews',        Icon: ShieldCheck,    label: 'Reviews',         color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-      { to: '/projects',       Icon: Building2,      label: 'Projects',        color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-      { to: '/members',        Icon: Users,          label: 'Team Members',    color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/30' },
+      { to: '/tasks', Icon: ClipboardList, label: 'My Tasks', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+      { to: '/reviews', Icon: ShieldCheck, label: 'Reviews', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+      { to: '/projects', Icon: Building2, label: 'Projects', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+      { to: '/members', Icon: Users, label: 'Team Members', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
     ],
     contractorAdmin: [
-      { to: '/tasks',          Icon: ClipboardList,  label: 'My Tasks',        color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/30'   },
-      { to: '/reviews',        Icon: ShieldCheck,    label: 'Reviews',         color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-      { to: '/projects',       Icon: Building2,      label: 'Projects',        color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-      { to: '/members',        Icon: Users,          label: 'Team',            color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/30' },
+      { to: '/tasks', Icon: ClipboardList, label: 'My Tasks', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+      { to: '/reviews', Icon: ShieldCheck, label: 'Reviews', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+      { to: '/projects', Icon: Building2, label: 'Projects', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+      { to: '/members', Icon: Users, label: 'Team', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
     ],
     fieldWorker: [
-      { to: '/tasks',          Icon: ClipboardList,  label: 'My Tasks',        color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/30'   },
-      { to: '/reviews',        Icon: ShieldCheck,    label: 'My Updates',      color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
-      { to: '/projects',       Icon: Building2,      label: 'Projects',        color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-      { to: '/profile',        Icon: Users,          label: 'My Profile',      color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/30' },
+      { to: '/tasks', Icon: ClipboardList, label: 'My Tasks', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+      { to: '/reviews', Icon: ShieldCheck, label: 'My Updates', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/30' },
+      { to: '/projects', Icon: Building2, label: 'Projects', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+      { to: '/profile', Icon: Users, label: 'My Profile', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
     ],
   };
 
@@ -264,7 +264,7 @@ export const Dashboard = () => {
             {showQuickActions && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowQuickActions(false)} />
-                <div className="absolute right-0 mt-3 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                <div className="absolute right-0 mt-3 w-[calc(100vw-3rem)] sm:w-72 max-w-xs bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
                   {/* Panel header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/50">
                     <div className="flex items-center gap-2">
@@ -302,32 +302,32 @@ export const Dashboard = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loadingStats
           ? Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="animate-pulse border-0 shadow-lg h-32" />
-            ))
+            <Card key={i} className="animate-pulse border-0 shadow-lg h-32" />
+          ))
           : statCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <Card key={card.name} className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 cursor-default">
-                  <div className={`h-1 bg-gradient-to-r ${card.bar}`} />
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{card.name}</p>
-                        <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{card.value}</p>
-                      </div>
-                      <div className={`p-2.5 rounded-xl ${card.bg}`}>
-                        <Icon className={`h-5 w-5 ${card.color}`} />
-                      </div>
+            const Icon = card.icon;
+            return (
+              <Card key={card.name} className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 cursor-default">
+                <div className={`h-1 bg-gradient-to-r ${card.bar}`} />
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{card.name}</p>
+                      <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">{card.value}</p>
                     </div>
-                    {card.link && card.value > 0 && (
-                      <Link to={card.link} className={`mt-2 text-xs font-medium flex items-center gap-1 ${card.color} hover:underline`}>
-                        Review now <ChevronRight className="h-3 w-3" />
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    <div className={`p-2.5 rounded-xl ${card.bg}`}>
+                      <Icon className={`h-5 w-5 ${card.color}`} />
+                    </div>
+                  </div>
+                  {card.link && card.value > 0 && (
+                    <Link to={card.link} className={`mt-2 text-xs font-medium flex items-center gap-1 ${card.color} hover:underline`}>
+                      Review now <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
       </div>
 
       {/* ── Alert row: overdue + upcoming ──────────────────────────── */}
@@ -387,11 +387,11 @@ export const Dashboard = () => {
             ) : s ? (
               <div className="space-y-3">
                 {[
-                  { label: 'Not Started',  count: s.notStartedTasks,  color: 'bg-gray-400',     text: 'text-gray-600 dark:text-gray-400',   ring: 'bg-gray-100 dark:bg-gray-700' },
-                  { label: 'In Progress',  count: s.inProgressTasks,  color: 'bg-blue-500',     text: 'text-blue-700 dark:text-blue-300',   ring: 'bg-blue-50 dark:bg-blue-900/30' },
-                  { label: 'Under Review', count: s.underReviewTasks, color: 'bg-yellow-500',   text: 'text-yellow-700 dark:text-yellow-300', ring: 'bg-yellow-50 dark:bg-yellow-900/30' },
-                  { label: 'Completed',    count: s.completedTasks,   color: 'bg-green-500',    text: 'text-green-700 dark:text-green-300', ring: 'bg-green-50 dark:bg-green-900/30' },
-                  { label: 'Rejected',     count: s.rejectedTasks,    color: 'bg-red-500',      text: 'text-red-700 dark:text-red-300',    ring: 'bg-red-50 dark:bg-red-900/30' },
+                  { label: 'Not Started', count: s.notStartedTasks, color: 'bg-gray-400', text: 'text-gray-600 dark:text-gray-400', ring: 'bg-gray-100 dark:bg-gray-700' },
+                  { label: 'In Progress', count: s.inProgressTasks, color: 'bg-blue-500', text: 'text-blue-700 dark:text-blue-300', ring: 'bg-blue-50 dark:bg-blue-900/30' },
+                  { label: 'Under Review', count: s.underReviewTasks, color: 'bg-yellow-500', text: 'text-yellow-700 dark:text-yellow-300', ring: 'bg-yellow-50 dark:bg-yellow-900/30' },
+                  { label: 'Completed', count: s.completedTasks, color: 'bg-green-500', text: 'text-green-700 dark:text-green-300', ring: 'bg-green-50 dark:bg-green-900/30' },
+                  { label: 'Rejected', count: s.rejectedTasks, color: 'bg-red-500', text: 'text-red-700 dark:text-red-300', ring: 'bg-red-50 dark:bg-red-900/30' },
                 ].map(({ label, count, color, text, ring }) => (
                   <div key={label} className="flex items-center gap-3">
                     <div className={`w-28 flex-shrink-0 text-xs font-medium ${text}`}>{label}</div>
@@ -530,7 +530,7 @@ export const Dashboard = () => {
                 {activities.map((a, i) => {
                   const { Icon, color, bg } = activityIcon(a.type ?? a.Type);
                   const msg = a.message ?? a.Message ?? '';
-                  const ts  = a.timestamp ?? a.Timestamp;
+                  const ts = a.timestamp ?? a.Timestamp;
                   const link = a.link ?? a.Link;
                   const row = (
                     <div className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">

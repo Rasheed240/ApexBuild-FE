@@ -21,13 +21,13 @@ import { UserDetailModal } from '../components/ui/UserDetailModal';
 
 const TASK_STATUS_COLORS = {
   NotStarted: 'bg-gray-100 text-gray-700',
-  InProgress:  'bg-blue-100 text-blue-700',
+  InProgress: 'bg-blue-100 text-blue-700',
   UnderReview: 'bg-yellow-100 text-yellow-700',
-  OnHold:      'bg-orange-100 text-orange-700',
-  Approved:    'bg-teal-100 text-teal-700',
-  Completed:   'bg-green-100 text-green-700',
-  Rejected:    'bg-red-100 text-red-700',
-  Cancelled:   'bg-gray-100 text-gray-500',
+  OnHold: 'bg-orange-100 text-orange-700',
+  Approved: 'bg-teal-100 text-teal-700',
+  Completed: 'bg-green-100 text-green-700',
+  Rejected: 'bg-red-100 text-red-700',
+  Cancelled: 'bg-gray-100 text-gray-500',
 };
 
 const formatDate = (d) => d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -87,15 +87,14 @@ function ReviewChainCard({ update }) {
             {idx > 0 && (
               <div className={`h-0.5 mb-3 ${steps[idx - 1].done && steps[idx - 1].approved !== false ? 'bg-green-400' : 'bg-gray-200 dark:bg-gray-700'}`} />
             )}
-            <div className={`p-2.5 rounded-lg border text-xs ${
-              step.done && step.approved !== false
-                ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
-                : step.done && step.approved === false
+            <div className={`p-2.5 rounded-lg border text-xs ${step.done && step.approved !== false
+              ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
+              : step.done && step.approved === false
                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
                 : isActive
-                ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-            }`}>
+                  ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+              }`}>
               <div className="flex items-center gap-1 mb-1">
                 <Icon className="h-3 w-3 flex-shrink-0" />
                 <span className="font-semibold truncate">{step.label}</span>
@@ -129,20 +128,20 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
   const { user } = useAuth();
   const mediaInputRef = useRef(null);
 
-  const [updates,   setUpdates]   = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [updates, setUpdates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(null);
-  const [feedback,  setFeedback]  = useState('');
-  const [error,     setError]     = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [error, setError] = useState('');
 
   // Inline submit form state
-  const [showSubmitForm,    setShowSubmitForm]    = useState(false);
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [submitDescription, setSubmitDescription] = useState('');
-  const [submitProgress,    setSubmitProgress]    = useState(task?.progress ?? 0);
-  const [submitMedia,       setSubmitMedia]       = useState({ urls: [], types: [] });
-  const [uploadingMedia,    setUploadingMedia]    = useState(false);
-  const [submitting,        setSubmitting]        = useState(false);
-  const [submitError,       setSubmitError]       = useState('');
+  const [submitProgress, setSubmitProgress] = useState(task?.progress ?? 0);
+  const [submitMedia, setSubmitMedia] = useState({ urls: [], types: [] });
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const fetchUpdates = () => {
     setLoading(true);
@@ -209,8 +208,8 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
     const feedbackText = feedback.trim();
     try {
       if (type === 'contractorAdmin') await taskService.reviewByContractorAdmin(updateId, approved, feedbackText);
-      else if (type === 'supervisor')   await taskService.reviewBySupervisor(updateId, approved, feedbackText);
-      else                              await taskService.reviewByAdmin(updateId, approved, feedbackText);
+      else if (type === 'supervisor') await taskService.reviewBySupervisor(updateId, approved, feedbackText);
+      else await taskService.reviewByAdmin(updateId, approved, feedbackText);
 
       setReviewing(null);
       setFeedback('');
@@ -221,8 +220,8 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
   };
 
   // ── Permission checks ──────────────────────────────────────────────────────
-  const myProjectRole  = task?.currentUserProjectRole;
-  const isAssigned     = task?.assignees?.some(a => a.userId === user?.id);
+  const myProjectRole = task?.currentUserProjectRole;
+  const isAssigned = task?.assignees?.some(a => a.userId === user?.id);
   const isAdminOrAbove = ['ProjectAdministrator', 'ProjectOwner', 'PlatformAdmin', 'SuperAdmin'].includes(myProjectRole);
   const canSubmitUpdate = myProjectRole === 'FieldWorker' && isAssigned;
 
@@ -268,7 +267,7 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
                 className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700 accent-primary-600"
               />
               <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-                {[0,25,50,75,100].map(v => <span key={v}>{v}%</span>)}
+                {[0, 25, 50, 75, 100].map(v => <span key={v}>{v}%</span>)}
               </div>
             </div>
             <div>
@@ -291,7 +290,7 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
                     const t = submitMedia.types[i] || 'document';
                     if (t === 'image') return <img key={i} src={url} alt="" className="h-16 w-16 object-cover rounded-lg" />;
                     if (t === 'video') return <video key={i} src={url} className="h-16 w-16 rounded-lg" />;
-                    return <div key={i} className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded"><Paperclip className="h-3 w-3" /> File {i+1}</div>;
+                    return <div key={i} className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded"><Paperclip className="h-3 w-3" /> File {i + 1}</div>;
                   })}
                 </div>
               )}
@@ -323,16 +322,16 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
       ) : (
         updates.map(u => {
           const statusLabel = UPDATE_STATUS_LABELS[u.status] || u.status;
-          const isUnderCA        = u.status === UPDATE_STATUS.UnderContractorAdminReview;
-          const isUnderSupervisor= u.status === UPDATE_STATUS.UnderSupervisorReview;
-          const isUnderAdmin     = u.status === UPDATE_STATUS.UnderAdminReview;
-          const isFullyApproved  = u.status === UPDATE_STATUS.AdminApproved;
-          const isRejected       = u.status === UPDATE_STATUS.ContractorAdminRejected
-                                || u.status === UPDATE_STATUS.SupervisorRejected
-                                || u.status === UPDATE_STATUS.AdminRejected;
+          const isUnderCA = u.status === UPDATE_STATUS.UnderContractorAdminReview;
+          const isUnderSupervisor = u.status === UPDATE_STATUS.UnderSupervisorReview;
+          const isUnderAdmin = u.status === UPDATE_STATUS.UnderAdminReview;
+          const isFullyApproved = u.status === UPDATE_STATUS.AdminApproved;
+          const isRejected = u.status === UPDATE_STATUS.ContractorAdminRejected
+            || u.status === UPDATE_STATUS.SupervisorRejected
+            || u.status === UPDATE_STATUS.AdminRejected;
 
-          const canReviewAsCA    = isUnderCA    && myProjectRole === 'ContractorAdmin';
-          const canReviewAsSup   = isUnderSupervisor && myProjectRole === 'DepartmentSupervisor';
+          const canReviewAsCA = isUnderCA && myProjectRole === 'ContractorAdmin';
+          const canReviewAsSup = isUnderSupervisor && myProjectRole === 'DepartmentSupervisor';
           const canReviewAsAdmin = isUnderAdmin && isAdminOrAbove;
 
           return (
@@ -346,11 +345,10 @@ function UpdatesTab({ taskId, task, onTaskRefresh }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-primary-600">{u.progressPercentage}%</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      isFullyApproved ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isFullyApproved ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                       isRejected ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    }`}>
+                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      }`}>
                       {statusLabel}
                     </span>
                   </div>
@@ -521,9 +519,9 @@ function AssigneesTab({ assignees, onAssign, projectId }) {
 // ─── Comments Tab ─────────────────────────────────────────────────────────────
 function CommentsTab({ taskId }) {
   const [comments, setComments] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [text,     setText]     = useState('');
-  const [sending,  setSending]  = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
 
   const fetchComments = () => {
     taskService.getTaskComments(taskId)
@@ -661,30 +659,30 @@ function SubtasksTab({ subtasks, onAdd }) {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function TaskDetail() {
-  const { taskId }       = useParams();
-  const navigate         = useNavigate();
-  const [searchParams]   = useSearchParams();
+  const { taskId } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
-  const docInputRef   = useRef(null);
+  const docInputRef = useRef(null);
   const audioInputRef = useRef(null);
 
   const { user } = useAuth();
 
-  const [task,          setTask]          = useState(null);
-  const [subtasks,      setSubtasks]      = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [uploadingMedia,setUploadingMedia]= useState(false);
-  const [error,         setError]         = useState('');
+  const [task, setTask] = useState(null);
+  const [subtasks, setSubtasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [error, setError] = useState('');
   // Honour ?tab=updates (or any tab) when navigating from Reviews page
-  const [activeTab,     setActiveTab]     = useState(searchParams.get('tab') || 'overview');
-  const [isEditModalOpen,    setIsEditModalOpen]    = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
 
   const fetchTaskDetails = async () => {
     try {
       setLoading(true); setError('');
-      const res  = await api.get(`/tasks/${taskId}`);
+      const res = await api.get(`/tasks/${taskId}`);
       const data = res.data?.data || res.data;
       setTask(data);
       if (data && !data.parentTaskId) {
@@ -708,9 +706,9 @@ export function TaskDetail() {
       const result = await uploadTaskMedia(taskId, file, mediaType);
       setTask(prev => {
         const updated = { ...prev };
-        if      (mediaType === 'image')    updated.imageUrls      = [...(updated.imageUrls      || []), result.url];
-        else if (mediaType === 'video')    updated.videoUrls      = [...(updated.videoUrls      || []), result.url];
-        else if (mediaType === 'audio')    updated.audioUrls      = [...(updated.audioUrls      || []), result.url];
+        if (mediaType === 'image') updated.imageUrls = [...(updated.imageUrls || []), result.url];
+        else if (mediaType === 'video') updated.videoUrls = [...(updated.videoUrls || []), result.url];
+        else if (mediaType === 'audio') updated.audioUrls = [...(updated.audioUrls || []), result.url];
         else if (mediaType === 'document') updated.attachmentUrls = [...(updated.attachmentUrls || []), result.url];
         return updated;
       });
@@ -738,17 +736,19 @@ export function TaskDetail() {
     );
   }
 
-  const heroImage  = task?.imageUrls?.[0];
+  const heroImage = task?.imageUrls?.[0];
   const statusColor = TASK_STATUS_COLORS[task?.status] || '';
 
   const TABS = [
-    { id: 'overview',   label: 'Overview',   icon: TrendingUp    },
-    { id: 'updates',    label: 'Updates',    icon: Activity      },
-    { id: 'assignees',  label: 'Assignees',  icon: Users,
-      badge: task?.assignees?.length || null },
-    { id: 'comments',   label: 'Comments',   icon: MessageSquare },
-    { id: 'media',      label: 'Media',      icon: ImageIcon     },
-    { id: 'subtasks',   label: 'Subtasks',   icon: Layers        },
+    { id: 'overview', label: 'Overview', icon: TrendingUp },
+    { id: 'updates', label: 'Updates', icon: Activity },
+    {
+      id: 'assignees', label: 'Assignees', icon: Users,
+      badge: task?.assignees?.length || null
+    },
+    { id: 'comments', label: 'Comments', icon: MessageSquare },
+    { id: 'media', label: 'Media', icon: ImageIcon },
+    { id: 'subtasks', label: 'Subtasks', icon: Layers },
   ];
 
   return (
@@ -776,9 +776,9 @@ export function TaskDetail() {
             <span className="text-white">{task?.code}</span>
           </div>
 
-          <div className="flex items-start justify-between gap-4 pb-8">
-            <div className="flex-1">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow">{task?.title}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-8">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow">{task?.title}</h1>
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-sm font-medium px-3 py-1 rounded-full backdrop-blur-sm ${statusColor}`}>
                   {TASK_STATUS_LABELS[task?.status] || task?.status}
@@ -811,16 +811,15 @@ export function TaskDetail() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-0 overflow-x-auto border-b border-white/20">
+          <div className="flex gap-0 overflow-x-auto scrollbar-none border-b border-white/20 -mx-4 px-4 md:mx-0 md:px-0">
             {TABS.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-                    isActive ? 'border-white text-white' : 'border-transparent text-white/60 hover:text-white/90'
-                  }`}>
-                  <Icon className="h-4 w-4" /> {tab.label}
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive ? 'border-white text-white' : 'border-transparent text-white/60 hover:text-white/90'
+                    }`}>
+                  <Icon className="h-4 w-4 flex-shrink-0" /> {tab.label}
                   {tab.badge ? (
                     <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-white/20 text-white leading-none">
                       {tab.badge}
@@ -949,11 +948,11 @@ export function TaskDetail() {
                   <CardContent>
                     {task?.attachmentUrls?.length
                       ? <div className="space-y-2">{task.attachmentUrls.map((url, i) => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-gray-400" /><span className="text-sm">Document {i + 1}</span></div>
-                            <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Download</a>
-                          </div>
-                        ))}</div>
+                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-gray-400" /><span className="text-sm">Document {i + 1}</span></div>
+                          <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Download</a>
+                        </div>
+                      ))}</div>
                       : <p className="text-center py-8 text-gray-400 text-sm">No attachments</p>}
                   </CardContent>
                 </Card>

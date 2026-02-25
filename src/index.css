@@ -127,6 +127,15 @@
     display: none;
   }
 
+  /* Used for horizontally-scrollable tab bars that shouldn't show a scrollbar */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Auth page animations */
   @keyframes blob {
     0%, 100% {

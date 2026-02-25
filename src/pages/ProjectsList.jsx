@@ -99,23 +99,23 @@ export const ProjectsList = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">
                 Projects
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Manage and track your construction projects
               </p>
             </div>
-            <Button onClick={() => navigate('/projects/new')} className="gap-2">
+            <Button onClick={() => navigate('/projects/new')} className="gap-2 self-start sm:self-auto">
               <Plus className="h-4 w-4" />
               New Project
             </Button>
           </div>
 
           {/* Search & Filters */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -131,24 +131,22 @@ export const ProjectsList = () => {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
+            <div className="flex gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1 self-start">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${
-                  viewMode === 'grid'
+                className={`p-2 rounded ${viewMode === 'grid'
                     ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600'
                     : 'text-gray-600 dark:text-gray-400'
-                }`}
+                  }`}
               >
                 <Grid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${
-                  viewMode === 'list'
+                className={`p-2 rounded ${viewMode === 'list'
                     ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600'
                     : 'text-gray-600 dark:text-gray-400'
-                }`}
+                  }`}
               >
                 <List className="h-4 w-4" />
               </button>

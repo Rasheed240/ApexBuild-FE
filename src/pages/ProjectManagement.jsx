@@ -18,12 +18,12 @@ import {
 } from 'lucide-react';
 
 const TABS = [
-  { id: 'overview',     label: 'Overview',     icon: BarChart2   },
-  { id: 'tasks',        label: 'Tasks',        icon: Target       },
-  { id: 'milestones',   label: 'Milestones',   icon: Flag         },
-  { id: 'contractors',  label: 'Contractors',  icon: HardHat      },
-  { id: 'departments',  label: 'Departments',  icon: Layers       },
-  { id: 'members',      label: 'Members',      icon: Users        },
+  { id: 'overview', label: 'Overview', icon: BarChart2 },
+  { id: 'tasks', label: 'Tasks', icon: Target },
+  { id: 'milestones', label: 'Milestones', icon: Flag },
+  { id: 'contractors', label: 'Contractors', icon: HardHat },
+  { id: 'departments', label: 'Departments', icon: Layers },
+  { id: 'members', label: 'Members', icon: Users },
 ];
 
 const formatDate = (date) => {
@@ -46,13 +46,13 @@ const daysUntil = (date) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const TASK_STATUS_COLORS = {
   NotStarted: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-  InProgress:  'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+  InProgress: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
   UnderReview: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
-  OnHold:      'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
-  Approved:    'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200',
-  Completed:   'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
-  Rejected:    'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
-  Cancelled:   'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
+  OnHold: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
+  Approved: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200',
+  Completed: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+  Rejected: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
+  Cancelled: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
 };
 
 const PRIORITY_LABELS = { 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Critical' };
@@ -94,18 +94,18 @@ function StatCard({ label, value, icon: Icon, color = 'text-primary-600', bg = '
 
 // ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
 function OverviewTab({ project, tasks, milestones, contractors, departments }) {
-  const completedTasks  = tasks.filter(t => t.status === 'Completed').length;
+  const completedTasks = tasks.filter(t => t.status === 'Completed').length;
   const inProgressTasks = tasks.filter(t => t.status === 'InProgress').length;
-  const avgProgress     = tasks.length ? Math.round(tasks.reduce((s, t) => s + (t.progress || 0), 0) / tasks.length) : 0;
+  const avgProgress = tasks.length ? Math.round(tasks.reduce((s, t) => s + (t.progress || 0), 0) / tasks.length) : 0;
 
   return (
     <div className="space-y-6">
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Tasks"     value={tasks.length}      icon={Target}      color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
-        <StatCard label="In Progress"     value={inProgressTasks}   icon={Clock}       color="text-blue-600"   bg="bg-blue-50 dark:bg-blue-900/20"   />
-        <StatCard label="Completed"       value={completedTasks}    icon={CheckCircle} color="text-green-600"  bg="bg-green-50 dark:bg-green-900/20"  />
-        <StatCard label="Avg Progress"    value={`${avgProgress}%`} icon={TrendingUp}  color="text-primary-600" />
+        <StatCard label="Total Tasks" value={tasks.length} icon={Target} color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
+        <StatCard label="In Progress" value={inProgressTasks} icon={Clock} color="text-blue-600" bg="bg-blue-50 dark:bg-blue-900/20" />
+        <StatCard label="Completed" value={completedTasks} icon={CheckCircle} color="text-green-600" bg="bg-green-50 dark:bg-green-900/20" />
+        <StatCard label="Avg Progress" value={`${avgProgress}%`} icon={TrendingUp} color="text-primary-600" />
       </div>
 
       {/* Project Info */}
@@ -480,11 +480,10 @@ function MilestonesTab({ projectId, navigate }) {
               return (
                 <div key={m.id} className="flex gap-4">
                   {/* Timeline dot */}
-                  <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    m.status === 'Completed' ? 'bg-green-500' :
-                    m.status === 'InProgress' ? 'bg-blue-500' :
-                    isOverdue ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}>
+                  <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${m.status === 'Completed' ? 'bg-green-500' :
+                      m.status === 'InProgress' ? 'bg-blue-500' :
+                        isOverdue ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}>
                     {m.status === 'Completed'
                       ? <CheckCircle className="h-5 w-5 text-white" />
                       : <span className="text-xs font-bold text-white">{idx + 1}</span>
@@ -551,7 +550,7 @@ function ContractorsTab({ projectId, navigate }) {
     Promise.all([
       contractorService.getByProject(projectId).catch(() => []),
       api.get(`/projects/${projectId}/members`, { params: { pageSize: 200 } })
-         .then(r => r.data?.data?.members || r.data?.members || []).catch(() => []),
+        .then(r => r.data?.data?.members || r.data?.members || []).catch(() => []),
     ]).then(([c, m]) => {
       setContractors(Array.isArray(c) ? c : []);
       setAllMembers(Array.isArray(m) ? m : []);
@@ -700,7 +699,7 @@ function DepartmentsTab({ projectId, navigate }) {
     Promise.all([
       departmentService.getByProject(projectId).catch(() => []),
       api.get(`/projects/${projectId}/members`, { params: { pageSize: 200 } })
-         .then(r => r.data?.data?.members || r.data?.members || []).catch(() => []),
+        .then(r => r.data?.data?.members || r.data?.members || []).catch(() => []),
     ]).then(([d, m]) => {
       setDepartments(Array.isArray(d) ? d : []);
       setAllMembers(Array.isArray(m) ? m : []);
@@ -832,10 +831,10 @@ function DepartmentsTab({ projectId, navigate }) {
 
 // ─── MEMBERS TAB ─────────────────────────────────────────────────────────────
 const CONTRACT_TYPE_COLORS = {
-  FullTime:   'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
-  PartTime:   'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200',
-  Contract:   'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200',
-  Freelance:  'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
+  FullTime: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+  PartTime: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200',
+  Contract: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200',
+  Freelance: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
   Internship: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200',
 };
 
@@ -883,8 +882,8 @@ function MembersTab({ projectId }) {
 
   useEffect(() => { fetchMembers(search); }, [projectId, activeFilter]);
 
-  const deptOptions  = [...new Set(members.filter(m => m.departmentName).map(m => m.departmentName))].sort();
-  const roleOptions  = [...new Set(members.filter(m => m.roleName).map(m => m.roleName))].sort();
+  const deptOptions = [...new Set(members.filter(m => m.departmentName).map(m => m.departmentName))].sort();
+  const roleOptions = [...new Set(members.filter(m => m.roleName).map(m => m.roleName))].sort();
   const displayed = members.filter(m =>
     (!deptFilter || m.departmentName === deptFilter) &&
     (!roleFilter || m.roleName === roleFilter)
@@ -894,9 +893,9 @@ function MembersTab({ projectId }) {
     <div className="space-y-5">
       {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatCard label="Total Members" value={totalMembers} icon={Users}       color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
-        <StatCard label="Active"        value={activeMembers} icon={CheckCircle} color="text-green-600"  bg="bg-green-50 dark:bg-green-900/20"  />
-        <StatCard label="Inactive"      value={totalMembers - activeMembers} icon={AlertCircle} color="text-gray-600" bg="bg-gray-100 dark:bg-gray-700/40" />
+        <StatCard label="Total Members" value={totalMembers} icon={Users} color="text-indigo-600" bg="bg-indigo-50 dark:bg-indigo-900/20" />
+        <StatCard label="Active" value={activeMembers} icon={CheckCircle} color="text-green-600" bg="bg-green-50 dark:bg-green-900/20" />
+        <StatCard label="Inactive" value={totalMembers - activeMembers} icon={AlertCircle} color="text-gray-600" bg="bg-gray-100 dark:bg-gray-700/40" />
       </div>
 
       {/* Toolbar */}
@@ -1040,13 +1039,13 @@ export const ProjectManagement = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [project,     setProject]     = useState(null);
-  const [tasks,       setTasks]       = useState([]);
-  const [milestones,  setMilestones]  = useState([]);
+  const [project, setProject] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [milestones, setMilestones] = useState([]);
   const [contractors, setContractors] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const activeTab = searchParams.get('tab') || 'overview';
   const setTab = (tab) => setSearchParams({ tab });
@@ -1076,8 +1075,8 @@ export const ProjectManagement = () => {
         const status = err.response?.status;
         setError(
           status === 404 ? 'Project not found.' :
-          status === 403 ? 'You do not have permission to view this project.' :
-          err.response?.data?.message || 'Failed to load project'
+            status === 403 ? 'You do not have permission to view this project.' :
+              err.response?.data?.message || 'Failed to load project'
         );
       } finally {
         setLoading(false);
@@ -1116,10 +1115,10 @@ export const ProjectManagement = () => {
   }
 
   const projectStatusColor = {
-    Active:   'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+    Active: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
     Planning: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
-    OnHold:   'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
-    Completed:'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+    OnHold: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
+    Completed: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
   }[project?.status] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
 
   return (
@@ -1136,26 +1135,26 @@ export const ProjectManagement = () => {
             <span className="text-gray-900 dark:text-white">{project?.name}</span>
           </div>
 
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{project?.name}</h1>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${projectStatusColor}`}>{project?.status}</span>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{project?.name}</h1>
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${projectStatusColor}`}>{project?.status}</span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">{project?.description}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{project?.projectType}</span>
+              {project?.description && <p className="text-sm text-gray-500 dark:text-gray-400">{project?.description}</p>}
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400">
+                {project?.projectType && <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{project?.projectType}</span>}
                 {project?.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{project.location}</span>}
-                <span className="font-mono">{project?.code}</span>
+                {project?.code && <span className="font-mono">{project?.code}</span>}
               </div>
             </div>
-            <Button size="sm" variant="outline" className="gap-1 flex-shrink-0" onClick={() => {}}>
+            <Button size="sm" variant="outline" className="gap-1 flex-shrink-0 self-start" onClick={() => { }}>
               <Edit2 className="h-4 w-4" /> Edit
             </Button>
           </div>
 
-          {/* Tab Nav */}
-          <div className="flex gap-0 overflow-x-auto">
+          {/* Tab Nav – horizontally scrollable on mobile */}
+          <div className="flex gap-0 overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
             {TABS.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -1163,16 +1162,16 @@ export const ProjectManagement = () => {
                 <button
                   key={tab.id}
                   onClick={() => setTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-                    isActive
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive
                       ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
-                  }`}
+                    }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                  {tab.id === 'tasks'       && tasks.length > 0       && <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{tasks.length}</span>}
-                  {tab.id === 'milestones'  && milestones.length > 0  && <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{milestones.length}</span>}
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                  <span className="xs:hidden sm:hidden">{tab.label.slice(0, 4)}</span>
+                  {tab.id === 'tasks' && tasks.length > 0 && <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{tasks.length}</span>}
+                  {tab.id === 'milestones' && milestones.length > 0 && <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{milestones.length}</span>}
                   {tab.id === 'contractors' && contractors.length > 0 && <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{contractors.length}</span>}
                   {tab.id === 'departments' && departments.length > 0 && <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{departments.length}</span>}
                 </button>
@@ -1184,12 +1183,12 @@ export const ProjectManagement = () => {
 
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-        {activeTab === 'overview'    && <OverviewTab project={project} tasks={tasks} milestones={milestones} contractors={contractors} departments={departments} />}
-        {activeTab === 'tasks'       && <TasksTab projectId={projectId} navigate={navigate} />}
-        {activeTab === 'milestones'  && <MilestonesTab projectId={projectId} navigate={navigate} />}
+        {activeTab === 'overview' && <OverviewTab project={project} tasks={tasks} milestones={milestones} contractors={contractors} departments={departments} />}
+        {activeTab === 'tasks' && <TasksTab projectId={projectId} navigate={navigate} />}
+        {activeTab === 'milestones' && <MilestonesTab projectId={projectId} navigate={navigate} />}
         {activeTab === 'contractors' && <ContractorsTab projectId={projectId} navigate={navigate} />}
         {activeTab === 'departments' && <DepartmentsTab projectId={projectId} navigate={navigate} />}
-        {activeTab === 'members'     && <MembersTab projectId={projectId} />}
+        {activeTab === 'members' && <MembersTab projectId={projectId} />}
       </div>
     </div>
   );

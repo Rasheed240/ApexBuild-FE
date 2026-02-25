@@ -17,26 +17,26 @@ const fmt = (date) => {
   const m = Math.floor(ms / 60000);
   const h = Math.floor(ms / 3600000);
   const d = Math.floor(ms / 86400000);
-  if (m < 1)  return 'just now';
+  if (m < 1) return 'just now';
   if (m < 60) return `${m}m ago`;
   if (h < 24) return `${h}h ago`;
   return d === 1 ? 'yesterday' : `${d}d ago`;
 };
 
 const STATUS_META = {
-  [UPDATE_STATUS.Submitted]:                  { label: 'Submitted',                color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',            bar: 'border-l-gray-400'   },
+  [UPDATE_STATUS.Submitted]: { label: 'Submitted', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', bar: 'border-l-gray-400' },
   [UPDATE_STATUS.UnderContractorAdminReview]: { label: 'Awaiting Contractor Admin', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', bar: 'border-l-purple-400' },
-  [UPDATE_STATUS.ContractorAdminApproved]:    { label: 'CA Approved',              color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300',           bar: 'border-l-blue-300'   },
-  [UPDATE_STATUS.ContractorAdminRejected]:    { label: 'CA Rejected',              color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',              bar: 'border-l-red-400'    },
-  [UPDATE_STATUS.UnderSupervisorReview]:      { label: 'Awaiting Supervisor',      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',          bar: 'border-l-blue-400'   },
-  [UPDATE_STATUS.SupervisorApproved]:         { label: 'Supervisor Approved',      color: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300',           bar: 'border-l-cyan-400'   },
-  [UPDATE_STATUS.SupervisorRejected]:         { label: 'Supervisor Rejected',      color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',              bar: 'border-l-red-400'    },
-  [UPDATE_STATUS.UnderAdminReview]:           { label: 'Awaiting Admin',           color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',  bar: 'border-l-orange-400' },
-  [UPDATE_STATUS.AdminApproved]:              { label: 'Fully Approved',           color: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',       bar: 'border-l-green-400'  },
-  [UPDATE_STATUS.AdminRejected]:              { label: 'Admin Rejected',           color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',              bar: 'border-l-red-400'    },
+  [UPDATE_STATUS.ContractorAdminApproved]: { label: 'CA Approved', color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300', bar: 'border-l-blue-300' },
+  [UPDATE_STATUS.ContractorAdminRejected]: { label: 'CA Rejected', color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300', bar: 'border-l-red-400' },
+  [UPDATE_STATUS.UnderSupervisorReview]: { label: 'Awaiting Supervisor', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', bar: 'border-l-blue-400' },
+  [UPDATE_STATUS.SupervisorApproved]: { label: 'Supervisor Approved', color: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300', bar: 'border-l-cyan-400' },
+  [UPDATE_STATUS.SupervisorRejected]: { label: 'Supervisor Rejected', color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300', bar: 'border-l-red-400' },
+  [UPDATE_STATUS.UnderAdminReview]: { label: 'Awaiting Admin', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', bar: 'border-l-orange-400' },
+  [UPDATE_STATUS.AdminApproved]: { label: 'Fully Approved', color: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300', bar: 'border-l-green-400' },
+  [UPDATE_STATUS.AdminRejected]: { label: 'Admin Rejected', color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300', bar: 'border-l-red-400' },
 };
 
-const PENDING_STATUSES  = [UPDATE_STATUS.UnderContractorAdminReview, UPDATE_STATUS.UnderSupervisorReview, UPDATE_STATUS.UnderAdminReview];
+const PENDING_STATUSES = [UPDATE_STATUS.UnderContractorAdminReview, UPDATE_STATUS.UnderSupervisorReview, UPDATE_STATUS.UnderAdminReview];
 const REJECTED_STATUSES = [UPDATE_STATUS.ContractorAdminRejected, UPDATE_STATUS.SupervisorRejected, UPDATE_STATUS.AdminRejected];
 
 function MediaThumb({ url, type, index }) {
@@ -63,21 +63,21 @@ export default function TaskUpdatesReview() {
   const { user } = useAuth();
   const { selectedOrganization } = useOrganizations();
 
-  const [updates,    setUpdates]    = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [reviewing,  setReviewing]  = useState(null);
-  const [feedback,   setFeedback]   = useState('');
-  const [error,      setError]      = useState('');
+  const [updates, setUpdates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [reviewing, setReviewing] = useState(null);
+  const [feedback, setFeedback] = useState('');
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [page,       setPage]       = useState(1);
-  const [total,      setTotal]      = useState(0);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Derive role category from user context
   const myRole = (() => {
     const names = (user?.roles || []).map(r => (typeof r === 'object' ? r.roleName || r.name : r));
-    if (names.some(n => ['SuperAdmin','PlatformAdmin','ProjectOwner','ProjectAdministrator'].includes(n))) return 'admin';
+    if (names.some(n => ['SuperAdmin', 'PlatformAdmin', 'ProjectOwner', 'ProjectAdministrator'].includes(n))) return 'admin';
     if (names.includes('DepartmentSupervisor')) return 'supervisor';
-    if (names.includes('ContractorAdmin'))      return 'contractorAdmin';
+    if (names.includes('ContractorAdmin')) return 'contractorAdmin';
     return 'fieldWorker';
   })();
 
@@ -89,8 +89,8 @@ export default function TaskUpdatesReview() {
     try {
       const params = { pageNumber: page, pageSize: 20 };
       if (selectedOrganization?.id) params.organizationId = selectedOrganization.id;
-      const data  = await taskService.getPendingUpdates(params);
-      const list  = data?.items || data?.Items || (Array.isArray(data) ? data : []);
+      const data = await taskService.getPendingUpdates(params);
+      const list = data?.items || data?.Items || (Array.isArray(data) ? data : []);
       setUpdates(list);
       setTotal(data?.totalCount ?? data?.TotalCount ?? list.length);
     } catch {
@@ -105,13 +105,13 @@ export default function TaskUpdatesReview() {
 
   const handleReview = async (update, approved) => {
     const type = update.status === UPDATE_STATUS.UnderContractorAdminReview ? 'contractorAdmin'
-               : update.status === UPDATE_STATUS.UnderSupervisorReview      ? 'supervisor'
-               : 'admin';
+      : update.status === UPDATE_STATUS.UnderSupervisorReview ? 'supervisor'
+        : 'admin';
     setError('');
     try {
-      if      (type === 'contractorAdmin') await taskService.reviewByContractorAdmin(update.id, approved, feedback.trim());
-      else if (type === 'supervisor')      await taskService.reviewBySupervisor(update.id, approved, feedback.trim());
-      else                                 await taskService.reviewByAdmin(update.id, approved, feedback.trim());
+      if (type === 'contractorAdmin') await taskService.reviewByContractorAdmin(update.id, approved, feedback.trim());
+      else if (type === 'supervisor') await taskService.reviewBySupervisor(update.id, approved, feedback.trim());
+      else await taskService.reviewByAdmin(update.id, approved, feedback.trim());
       setReviewing(null);
       setFeedback('');
       fetchUpdates();
@@ -124,8 +124,8 @@ export default function TaskUpdatesReview() {
     if (!searchTerm) return true;
     const q = searchTerm.toLowerCase();
     return (u.taskTitle || '').toLowerCase().includes(q)
-        || (u.taskCode  || '').toLowerCase().includes(q)
-        || (u.submittedByName || '').toLowerCase().includes(q);
+      || (u.taskCode || '').toLowerCase().includes(q)
+      || (u.submittedByName || '').toLowerCase().includes(q);
   });
 
   const pendingCount = updates.filter(u => PENDING_STATUSES.includes(u.status)).length;
@@ -141,8 +141,8 @@ export default function TaskUpdatesReview() {
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
           {loading ? 'Loading…'
             : isFieldWorker
-            ? `${updates.length} update${updates.length !== 1 ? 's' : ''} submitted`
-            : `${pendingCount} update${pendingCount !== 1 ? 's' : ''} awaiting your review`}
+              ? `${updates.length} update${updates.length !== 1 ? 's' : ''} submitted`
+              : `${pendingCount} update${pendingCount !== 1 ? 's' : ''} awaiting your review`}
         </p>
       </div>
 
@@ -186,7 +186,7 @@ export default function TaskUpdatesReview() {
       ) : (
         <div className="space-y-3">
           {displayed.map(update => {
-            const meta      = STATUS_META[update.status] ?? { label: update.statusLabel || 'Unknown', color: 'bg-gray-100 text-gray-700', bar: 'border-l-gray-400' };
+            const meta = STATUS_META[update.status] ?? { label: update.statusLabel || 'Unknown', color: 'bg-gray-100 text-gray-700', bar: 'border-l-gray-400' };
             const isPending = PENDING_STATUSES.includes(update.status);
             const isRejected = REJECTED_STATUSES.includes(update.status);
             const isApproved = update.status === UPDATE_STATUS.AdminApproved;
@@ -196,14 +196,14 @@ export default function TaskUpdatesReview() {
             return (
               <Card key={update.id} className={`border-l-4 ${meta.bar} hover:shadow-md transition-shadow`}>
                 <CardContent className="pt-4 pb-4">
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <div className="flex-1 min-w-0">
 
                       {/* Title + code */}
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        {isApproved  && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
-                        {isRejected  && <XCircle     className="h-4 w-4 text-red-500 flex-shrink-0"   />}
-                        {isPending   && <Clock       className="h-4 w-4 text-yellow-500 flex-shrink-0"/>}
+                        {isApproved && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
+                        {isRejected && <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                        {isPending && <Clock className="h-4 w-4 text-yellow-500 flex-shrink-0" />}
                         {!isPending && !isRejected && !isApproved
                           && <Activity className="h-4 w-4 text-gray-400 flex-shrink-0" />}
                         <span className="font-semibold text-gray-900 dark:text-white">
@@ -298,7 +298,7 @@ export default function TaskUpdatesReview() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex flex-col gap-2 flex-shrink-0">
+                    <div className="flex sm:flex-col gap-2 sm:flex-shrink-0">
                       <Button variant="outline" size="sm" className="gap-1 whitespace-nowrap"
                         onClick={() => navigate(`/tasks/${update.taskId}?tab=updates`)}>
                         View Task <ChevronRight className="h-3 w-3" />
@@ -307,9 +307,7 @@ export default function TaskUpdatesReview() {
                         <Button size="sm" className="whitespace-nowrap gap-1"
                           onClick={() => { setReviewing(update.id); setFeedback(''); }}>
                           <CheckSquare className="h-3 w-3" />
-                          {update.status === UPDATE_STATUS.UnderContractorAdminReview ? 'Review'
-                            : update.status === UPDATE_STATUS.UnderSupervisorReview   ? 'Review'
-                            : 'Review'}
+                          Review
                         </Button>
                       )}
                     </div>
