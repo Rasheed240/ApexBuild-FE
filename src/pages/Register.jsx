@@ -18,28 +18,28 @@ const passwordRegex = {
 };
 
 const registerSchema = z.object({
-  email: z.string().min(1,'Email is required').email('Invalid email').max(255),
-  firstName: z.string().min(1,'First name is required').max(100).regex(/^[a-zA-Z\s'-]+$/,'Invalid characters'),
-  lastName: z.string().min(1,'Last name is required').max(100).regex(/^[a-zA-Z\s'-]+$/,'Invalid characters'),
-  middleName: z.string().max(100).regex(/^[a-zA-Z\s'-]*$/,'Invalid characters').optional().or(z.literal('')),
-  password: z.string().min(1,'Password is required').min(8,'Min 8 characters').max(100)
+  email: z.string().min(1, 'Email is required').email('Invalid email').max(255),
+  firstName: z.string().min(1, 'First name is required').max(100).regex(/^[a-zA-Z\s'-]+$/, 'Invalid characters'),
+  lastName: z.string().min(1, 'Last name is required').max(100).regex(/^[a-zA-Z\s'-]+$/, 'Invalid characters'),
+  middleName: z.string().max(100).regex(/^[a-zA-Z\s'-]*$/, 'Invalid characters').optional().or(z.literal('')),
+  password: z.string().min(1, 'Password is required').min(8, 'Min 8 characters').max(100)
     .refine(v => passwordRegex.uppercase.test(v), 'Needs uppercase letter')
     .refine(v => passwordRegex.lowercase.test(v), 'Needs lowercase letter')
     .refine(v => passwordRegex.digit.test(v), 'Needs a number')
     .refine(v => passwordRegex.special.test(v), 'Needs a special character (@$!%*?&#)'),
-  confirmPassword: z.string().min(1,'Confirm your password'),
-  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$|^$/,'Use international format e.g. +2348...').optional().or(z.literal('')),
-  dateOfBirth: z.string().refine(v => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),'Invalid date').optional().or(z.literal('')),
-  gender: z.enum(['Male','Female','Other','PreferNotToSay'],{errorMap:()=>({message:'Select a gender'})}).optional(),
+  confirmPassword: z.string().min(1, 'Confirm your password'),
+  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$|^$/, 'Use international format e.g. +2348...').optional().or(z.literal('')),
+  dateOfBirth: z.string().refine(v => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), 'Invalid date').optional().or(z.literal('')),
+  gender: z.enum(['Male', 'Female', 'Other', 'PreferNotToSay'], { errorMap: () => ({ message: 'Select a gender' }) }).optional(),
   address: z.string().max(500).optional().or(z.literal('')),
   city: z.string().max(100).optional().or(z.literal('')),
   state: z.string().max(100).optional().or(z.literal('')),
   country: z.string().max(100).optional().or(z.literal('')),
   bio: z.string().max(500).optional().or(z.literal('')),
-  organizationName: z.string().min(1,'Organization name is required').max(200),
+  organizationName: z.string().min(1, 'Organization name is required').max(200),
   organizationDescription: z.string().max(1000).optional().or(z.literal('')),
-  organizationCode: z.string().regex(/^[A-Z0-9-]*$/,'Uppercase, numbers and hyphens only').max(50).optional().or(z.literal('')),
-}).refine(d => d.password === d.confirmPassword, { message:"Passwords don't match", path:['confirmPassword'] });
+  organizationCode: z.string().regex(/^[A-Z0-9-]*$/, 'Uppercase, numbers and hyphens only').max(50).optional().or(z.literal('')),
+}).refine(d => d.password === d.confirmPassword, { message: "Passwords don't match", path: ['confirmPassword'] });
 
 const PwReq = ({ met, label }) => (
   <span className={`flex items-center gap-1 text-xs font-medium transition-colors ${met ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-400 dark:text-slate-600'}`}>
@@ -62,17 +62,17 @@ const inputCls = (hasError) =>
   `w-full px-3.5 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200
    bg-gray-100 dark:bg-slate-800/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600
    ${hasError
-     ? 'border-2 border-red-500/50 focus:border-red-500'
-     : 'border border-gray-200 dark:border-slate-700/60 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-gray-300 dark:hover:border-slate-600'
-   }`;
+    ? 'border-2 border-red-500/50 focus:border-red-500'
+    : 'border border-gray-200 dark:border-slate-700/60 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-gray-300 dark:hover:border-slate-600'
+  }`;
 
 const iconInputCls = (hasError) =>
   `w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200
    bg-gray-100 dark:bg-slate-800/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600
    ${hasError
-     ? 'border-2 border-red-500/50 focus:border-red-500'
-     : 'border border-gray-200 dark:border-slate-700/60 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-gray-300 dark:hover:border-slate-600'
-   }`;
+    ? 'border-2 border-red-500/50 focus:border-red-500'
+    : 'border border-gray-200 dark:border-slate-700/60 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-gray-300 dark:hover:border-slate-600'
+  }`;
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ export const Register = () => {
   const [showOptional, setShowOptional] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [pwReqs, setPwReqs] = useState({ length:false, upper:false, lower:false, digit:false, special:false });
+  const [pwReqs, setPwReqs] = useState({ length: false, upper: false, lower: false, digit: false, special: false });
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(registerSchema),
@@ -93,10 +93,10 @@ export const Register = () => {
   const password = watch('password', '');
   useEffect(() => {
     setPwReqs({
-      length:  password.length >= 8,
-      upper:   passwordRegex.uppercase.test(password),
-      lower:   passwordRegex.lowercase.test(password),
-      digit:   passwordRegex.digit.test(password),
+      length: password.length >= 8,
+      upper: passwordRegex.uppercase.test(password),
+      lower: passwordRegex.lowercase.test(password),
+      digit: passwordRegex.digit.test(password),
       special: passwordRegex.special.test(password),
     });
   }, [password]);
@@ -140,11 +140,14 @@ export const Register = () => {
           backgroundImage: 'linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
-        <div className="absolute inset-0" style={{backgroundImage:'radial-gradient(ellipse at 20% 40%, rgba(99,102,241,0.12) 0%, transparent 60%)'}} />
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(ellipse at 20% 40%, rgba(99,102,241,0.12) 0%, transparent 60%)' }} />
 
         {/* Logo */}
         <div className="relative z-10 mb-10">
-          <img src="/apexbuild-image.png" alt="ApexBuild" className="w-52 object-contain" />
+          <picture>
+            <source srcSet="/apexbuild-image.webp" type="image/webp" />
+            <img src="/apexbuild-image.png" alt="ApexBuild" className="w-52 object-contain" loading="eager" fetchPriority="high" />
+          </picture>
         </div>
 
         {/* Hero + checklist */}
@@ -194,7 +197,10 @@ export const Register = () => {
           <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
             <div className="lg:hidden">
               <div className="inline-block bg-slate-900 rounded-xl px-3 py-2 shadow-lg">
-                <img src="/apexbuild-image.png" alt="ApexBuild" className="h-8 object-contain" />
+                <picture>
+                  <source srcSet="/apexbuild-image.webp" type="image/webp" />
+                  <img src="/apexbuild-image.png" alt="ApexBuild" className="h-8 object-contain" loading="eager" fetchPriority="high" />
+                </picture>
               </div>
             </div>
             <div className="lg:ml-auto flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
@@ -238,7 +244,7 @@ export const Register = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="First name" required error={errors.firstName?.message}>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{width:'15px',height:'15px'}} />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{ width: '15px', height: '15px' }} />
                       <input {...register('firstName')} placeholder="James" className={iconInputCls(errors.firstName)} />
                     </div>
                   </Field>
@@ -248,25 +254,25 @@ export const Register = () => {
 
                   <Field label="Email address" required error={errors.email?.message} className="col-span-2">
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{width:'15px',height:'15px'}} />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{ width: '15px', height: '15px' }} />
                       <input {...register('email')} type="email" autoComplete="email" placeholder="james@company.com" className={iconInputCls(errors.email)} />
                     </div>
                   </Field>
 
                   <Field label="Password" required error={errors.password?.message} className="col-span-2">
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{width:'15px',height:'15px'}} />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{ width: '15px', height: '15px' }} />
                       <input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="Min 8 chars" className={`${iconInputCls(errors.password)} pr-11`} />
                       <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors">
-                        {showPassword ? <EyeOff style={{width:'15px',height:'15px'}} /> : <Eye style={{width:'15px',height:'15px'}} />}
+                        {showPassword ? <EyeOff style={{ width: '15px', height: '15px' }} /> : <Eye style={{ width: '15px', height: '15px' }} />}
                       </button>
                     </div>
                     {password && (
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                        <PwReq met={pwReqs.length}  label="8+ chars" />
-                        <PwReq met={pwReqs.upper}   label="Uppercase" />
-                        <PwReq met={pwReqs.lower}   label="Lowercase" />
-                        <PwReq met={pwReqs.digit}   label="Number" />
+                        <PwReq met={pwReqs.length} label="8+ chars" />
+                        <PwReq met={pwReqs.upper} label="Uppercase" />
+                        <PwReq met={pwReqs.lower} label="Lowercase" />
+                        <PwReq met={pwReqs.digit} label="Number" />
                         <PwReq met={pwReqs.special} label="Special char" />
                       </div>
                     )}
@@ -274,10 +280,10 @@ export const Register = () => {
 
                   <Field label="Confirm password" required error={errors.confirmPassword?.message} className="col-span-2">
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{width:'15px',height:'15px'}} />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{ width: '15px', height: '15px' }} />
                       <input {...register('confirmPassword')} type={showConfirm ? 'text' : 'password'} placeholder="Re-enter password" className={`${iconInputCls(errors.confirmPassword)} pr-11`} />
                       <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors">
-                        {showConfirm ? <EyeOff style={{width:'15px',height:'15px'}} /> : <Eye style={{width:'15px',height:'15px'}} />}
+                        {showConfirm ? <EyeOff style={{ width: '15px', height: '15px' }} /> : <Eye style={{ width: '15px', height: '15px' }} />}
                       </button>
                     </div>
                   </Field>
@@ -295,13 +301,13 @@ export const Register = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Organization name" required error={errors.organizationName?.message} className="col-span-2">
                     <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{width:'15px',height:'15px'}} />
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{ width: '15px', height: '15px' }} />
                       <input {...register('organizationName')} placeholder="Okafor Construction Ltd" className={iconInputCls(errors.organizationName)} />
                     </div>
                   </Field>
                   <Field label="Phone number" error={errors.phoneNumber?.message} className="col-span-2">
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{width:'15px',height:'15px'}} />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" style={{ width: '15px', height: '15px' }} />
                       <input {...register('phoneNumber')} type="tel" placeholder="+2348100000001" className={iconInputCls(errors.phoneNumber)} />
                     </div>
                   </Field>
