@@ -197,7 +197,7 @@
     /* Fix for mobile zoom breaking vh height calculations */
     @media (max-width: 768px) {
       .min-h-screen {
-        min-height: calc(100vh / 0.65) !important;
+        min-height: calc(100vh / 0.70) !important;
       }
     }
   }
