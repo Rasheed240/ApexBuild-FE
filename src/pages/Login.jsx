@@ -146,7 +146,7 @@ export const Login = () => {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
+          className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
           aria-label="Toggle theme"
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -185,7 +185,7 @@ export const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-[#090e1a]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-primary-600/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Theme toggle (desktop only) */}
+        {/* Theme toggle – desktop only in form panel; mobile uses hero toggle above */}
         <button
           onClick={toggleTheme}
           className="absolute top-6 right-6 z-10 p-2 rounded-lg bg-gray-100 dark:bg-slate-800/60 hover:bg-gray-200 dark:hover:bg-slate-700/80 border border-gray-200 dark:border-slate-700/50 text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-all hidden lg:block"

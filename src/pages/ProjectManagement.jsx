@@ -350,8 +350,9 @@ function TasksTab({ projectId, navigate }) {
       {/* Filters */}
       <Card>
         <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="relative flex-1 min-w-48">
+          {/* Row 1: search + dropdowns */}
+          <div className="flex flex-wrap gap-3 items-center mb-3">
+            <div className="relative flex-1 min-w-0" style={{ minWidth: '160px' }}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -381,9 +382,12 @@ function TasksTab({ projectId, navigate }) {
               <option value="3">High</option>
               <option value="4">Critical</option>
             </select>
-            {/* View toggle */}
+          </div>
+          {/* Row 2: view toggle + New Task */}
+          <div className="flex items-center justify-between gap-3">
             <div className="flex gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
               <button
+                type="button"
                 onClick={() => setViewMode('list')}
                 className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 title="List view"
@@ -391,6 +395,7 @@ function TasksTab({ projectId, navigate }) {
                 <List className="h-4 w-4" />
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 title="Grid view"
@@ -481,8 +486,8 @@ function MilestonesTab({ projectId, navigate }) {
                 <div key={m.id} className="flex gap-4">
                   {/* Timeline dot */}
                   <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${m.status === 'Completed' ? 'bg-green-500' :
-                      m.status === 'InProgress' ? 'bg-blue-500' :
-                        isOverdue ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'
+                    m.status === 'InProgress' ? 'bg-blue-500' :
+                      isOverdue ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'
                     }`}>
                     {m.status === 'Completed'
                       ? <CheckCircle className="h-5 w-5 text-white" />
@@ -1163,8 +1168,8 @@ export const ProjectManagement = () => {
                   key={tab.id}
                   onClick={() => setTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive
-                      ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-                      : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
+                    ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
                     }`}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
