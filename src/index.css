@@ -32,7 +32,9 @@
 
   @media (max-width: 768px) {
     html {
-      zoom: 0.70;
+      /* Scales down all rem-based Tailwind sizing (padding, margin, text, width) 
+         by ~70% without breaking vh height units like zoom does */
+      font-size: 11px;
     }
   }
 
@@ -194,11 +196,5 @@
       animation: fade-in 0.5s ease-out;
     }
 
-    /* Fix for mobile zoom breaking vh height calculations */
-    @media (max-width: 768px) {
-      .min-h-screen {
-        min-height: calc(100vh / 0.70) !important;
-      }
-    }
   }
 }
