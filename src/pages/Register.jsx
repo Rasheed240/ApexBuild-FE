@@ -132,7 +132,7 @@ export const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-slate-950">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-slate-950">
       {/* ── Left brand strip ─────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[340px] xl:w-[380px] relative overflow-hidden flex-col p-10 flex-shrink-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0f1629] to-slate-950" />
@@ -190,20 +190,61 @@ export const Register = () => {
         </div>
       </div>
 
+      {/* ── Mobile brand header (hidden on desktop) ────────────────── */}
+      <div className="lg:hidden relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0f1629] to-slate-950" />
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: 'linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }} />
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(ellipse at 20% 40%, rgba(99,102,241,0.15) 0%, transparent 60%)' }} />
+
+        {/* Theme toggle inside mobile header */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+
+        <div className="relative z-10 flex flex-col items-center text-center px-6 pt-10 pb-7">
+          <picture>
+            <source srcSet="/apexbuild-image.webp" type="image/webp" />
+            <img src="/apexbuild-image.png" alt="ApexBuild" className="h-20 object-contain mb-4" loading="eager" fetchPriority="high" />
+          </picture>
+          <h2 className="text-2xl font-black text-white leading-tight mb-1">
+            Start building{' '}
+            <span className="bg-gradient-to-r from-primary-400 to-cyan-400 bg-clip-text text-transparent">smarter today.</span>
+          </h2>
+          <p className="text-slate-400 text-xs mt-1 max-w-xs">
+            Set up your organization and get your entire team connected in minutes.
+          </p>
+          {/* Perks pills */}
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            {['Free 14-day trial', 'No credit card', 'Enterprise security'].map(item => (
+              <span key={item} className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-500/10 border border-primary-500/20 rounded-full text-primary-400 text-[10px] font-semibold">
+                <Check className="h-2.5 w-2.5" />
+                {item}
+              </span>
+            ))}
+          </div>
+          {/* Sign-in link */}
+          <p className="text-xs text-slate-500 mt-4">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary-400 font-semibold hover:text-primary-300 transition-colors">Sign in</Link>
+          </p>
+        </div>
+      </div>
+
       {/* ── Right form panel ─────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         <div className="min-h-full flex flex-col">
-          {/* Top bar */}
-          <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
-            <div className="lg:hidden">
-              <div className="inline-block bg-slate-900 rounded-xl px-3 py-2 shadow-lg">
-                <picture>
-                  <source srcSet="/apexbuild-image.webp" type="image/webp" />
-                  <img src="/apexbuild-image.png" alt="ApexBuild" className="h-8 object-contain" loading="eager" fetchPriority="high" />
-                </picture>
-              </div>
-            </div>
-            <div className="lg:ml-auto flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
+          {/* Top bar – desktop only sign-in link & theme toggle */}
+          <div className="hidden lg:flex items-center justify-between px-8 py-5 flex-shrink-0">
+            <div />
+            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
               Already have an account?
               <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 font-semibold transition-colors">Sign in</Link>
               <button

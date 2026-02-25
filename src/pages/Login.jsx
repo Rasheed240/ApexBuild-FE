@@ -73,7 +73,7 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* ── Left brand panel ────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[52%] relative overflow-hidden flex-col justify-between p-14">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0f1629] to-slate-950" />
@@ -132,26 +132,63 @@ export const Login = () => {
         </div>
       </div>
 
+      {/* ── Mobile brand header (hidden on desktop) ─────────────────── */}
+      <div className="lg:hidden relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0f1629] to-slate-950" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.18) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(14,165,233,0.13) 0%, transparent 55%)',
+        }} />
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: 'linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }} />
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+
+        <div className="relative z-10 flex flex-col items-center text-center px-6 pt-10 pb-8">
+          <picture>
+            <source srcSet="/apexbuild-image.webp" type="image/webp" />
+            <img src="/apexbuild-image.png" alt="ApexBuild" className="h-20 object-contain mb-4" loading="eager" fetchPriority="high" />
+          </picture>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-500/10 border border-primary-500/20 rounded-full text-primary-400 text-xs font-semibold mb-3 tracking-wide">
+            <Star className="h-3 w-3 fill-primary-400" />
+            Trusted by leading construction firms
+          </div>
+          <h1 className="text-2xl font-black text-white leading-tight mb-1">
+            Build More. <span className="bg-gradient-to-r from-primary-400 to-cyan-400 bg-clip-text text-transparent">Manage Less.</span>
+          </h1>
+          <p className="text-slate-400 text-xs mt-1 max-w-xs">
+            The enterprise platform for project owners, contractors &amp; field teams.
+          </p>
+          {/* Mini stats */}
+          <div className="flex items-center gap-6 mt-5 pt-4 border-t border-slate-800/70 w-full justify-center">
+            {STATS.map(({ value, label }) => (
+              <div key={label} className="text-center">
+                <div className="text-lg font-black text-white">{value}</div>
+                <div className="text-[10px] text-slate-500 font-medium">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ── Right form panel ─────────────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-white dark:bg-slate-950 relative">
         {/* Background glow (dark only) */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-[#090e1a]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-primary-600/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Mobile logo */}
-        <div className="absolute top-5 left-5 lg:hidden z-10">
-          <div className="inline-block bg-slate-900 rounded-xl px-3 py-2 shadow-lg">
-            <picture>
-              <source srcSet="/apexbuild-image.webp" type="image/webp" />
-              <img src="/apexbuild-image.png" alt="ApexBuild" className="h-9 object-contain" loading="eager" fetchPriority="high" />
-            </picture>
-          </div>
-        </div>
-
-        {/* Theme toggle */}
+        {/* Theme toggle (desktop only) */}
         <button
           onClick={toggleTheme}
-          className="absolute top-6 right-6 z-10 p-2 rounded-lg bg-gray-100 dark:bg-slate-800/60 hover:bg-gray-200 dark:hover:bg-slate-700/80 border border-gray-200 dark:border-slate-700/50 text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-all"
+          className="absolute top-6 right-6 z-10 p-2 rounded-lg bg-gray-100 dark:bg-slate-800/60 hover:bg-gray-200 dark:hover:bg-slate-700/80 border border-gray-200 dark:border-slate-700/50 text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-all hidden lg:block"
           aria-label="Toggle theme"
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
