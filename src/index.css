@@ -193,5 +193,12 @@
     .animate-fade-in {
       animation: fade-in 0.5s ease-out;
     }
+
+    /* Fix for mobile zoom breaking vh height calculations */
+    @media (max-width: 768px) {
+      .min-h-screen {
+        min-height: calc(100vh / 0.65) !important;
+      }
+    }
   }
 }
