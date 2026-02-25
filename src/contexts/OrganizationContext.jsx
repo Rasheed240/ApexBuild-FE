@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { organizationService } from '../services/organizationService';
 import { useAuth } from './AuthContext';
+import cacheManager from '../services/cacheManager';
 
 const OrganizationContext = createContext(null);
 
@@ -61,6 +62,8 @@ export const OrganizationProvider = ({ children }) => {
   }, [authLoading, fetchOrganizations]);
 
   const selectOrganization = (organization) => {
+    // Clear all cached responses when switching orgs to prevent data bleed
+    cacheManager.clearAll();
     setSelectedOrganization(organization);
     if (organization) {
       localStorage.setItem('selectedOrganizationId', organization.id);

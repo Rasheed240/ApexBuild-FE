@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import cacheManager from '../services/cacheManager';
 
 const AuthContext = createContext(null);
 
@@ -65,11 +66,15 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authService.logout();
+      // Clear all cached API responses — prevents stale data for next login
+      cacheManager.clearAll();
       setUser(null);
       setIsAuthenticated(false);
       setSessionExpired(false);
     } catch (error) {
       console.error('Logout error:', error);
+      // Still clear cache even if the API call fails
+      cacheManager.clearAll();
     }
   };
 

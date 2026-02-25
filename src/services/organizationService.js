@@ -1,79 +1,105 @@
 import api from './api';
+import cachedApi from './cachedApi';
 
-const unwrap = (response) => response.data?.data ?? response.data;
+// TTL constants
+const TTL_15M = 15 * 60 * 1000;
+const TTL_10M = 10 * 60 * 1000;
+const TTL_5M = 5 * 60 * 1000;
+
+const unwrap = (data) => data?.data ?? data;
 
 export const organizationService = {
-  // List organizations
+  // List organizations (cached 15 min — orgs rarely change)
   listOrganizations: async (params = {}) => {
-    const response = await api.get('/organizations', { params });
-    return unwrap(response);
+    const qs = new URLSearchParams(params).toString();
+    const data = await cachedApi.get('/organizations', params, {
+      cacheKey: `orgs:list:${qs}`,
+      ttlMs: TTL_15M,
+    });
+    return unwrap(data);
   },
 
-  // Get organization by ID
+  // Get organization by ID (cached 10 min)
   getOrganizationById: async (organizationId) => {
-    const response = await api.get(`/organizations/${organizationId}`);
-    return unwrap(response);
+    const data = await cachedApi.get(`/organizations/${organizationId}`, {}, {
+      cacheKey: `orgs:${organizationId}`,
+      ttlMs: TTL_10M,
+    });
+    return unwrap(data);
   },
 
-  // Get organization members
+  // Get organization members (cached 5 min)
   getMembers: async (organizationId, params = {}) => {
-    const response = await api.get(`/organizations/${organizationId}/members`, { params });
-    return unwrap(response);
+    const qs = new URLSearchParams(params).toString();
+    const data = await cachedApi.get(`/organizations/${organizationId}/members`, params, {
+      cacheKey: `orgs:${organizationId}:members:${qs}`,
+      ttlMs: TTL_5M,
+    });
+    return unwrap(data);
   },
 
-  // Get organizations by owner
+  // Get organizations by owner (cached 10 min)
   getOrganizationsByOwner: async (ownerId = null) => {
     const url = ownerId ? `/organizations/owner/${ownerId}` : '/organizations/owner';
-    const response = await api.get(url);
-    return unwrap(response);
+    const data = await cachedApi.get(url, {}, {
+      cacheKey: `orgs:owner:${ownerId ?? 'me'}`,
+      ttlMs: TTL_10M,
+    });
+    return unwrap(data);
   },
 
-  // Create organization
+  // ── Mutations (all invalidate org cache) ──────────────────────────────────
+
   createOrganization: async (data) => {
-    const response = await api.post('/organizations', data);
-    return unwrap(response);
+    const result = await cachedApi.post('/organizations', data, {
+      invalidatePrefixes: ['orgs:list:', 'orgs:owner:'],
+    });
+    return unwrap(result);
   },
 
-  // Update organization
   updateOrganization: async (organizationId, data) => {
-    const response = await api.put(`/organizations/${organizationId}`, data);
-    return unwrap(response);
+    const result = await cachedApi.put(`/organizations/${organizationId}`, data, {
+      invalidatePrefixes: ['orgs:list:', 'orgs:owner:'],
+      invalidateKeys: [`orgs:${organizationId}`],
+    });
+    return unwrap(result);
   },
 
-  // Delete organization
   deleteOrganization: async (organizationId) => {
-    const response = await api.delete(`/organizations/${organizationId}`);
-    return unwrap(response);
+    const result = await cachedApi.delete(`/organizations/${organizationId}`, {
+      invalidatePrefixes: ['orgs:list:', 'orgs:owner:'],
+      invalidateKeys: [`orgs:${organizationId}`],
+    });
+    return unwrap(result);
   },
 
-  // Add member to organization
   addMember: async (organizationId, data) => {
-    const response = await api.post(`/organizations/${organizationId}/members`, data);
-    return unwrap(response);
+    const result = await cachedApi.post(`/organizations/${organizationId}/members`, data, {
+      invalidatePrefixes: [`orgs:${organizationId}:members:`],
+    });
+    return unwrap(result);
   },
 
-  // Remove member from organization
   removeMember: async (organizationId, userId) => {
-    const response = await api.delete(`/organizations/${organizationId}/members/${userId}`);
-    return unwrap(response);
+    const result = await cachedApi.delete(`/organizations/${organizationId}/members/${userId}`, {
+      invalidatePrefixes: [`orgs:${organizationId}:members:`],
+    });
+    return unwrap(result);
   },
 
-  // Update member role
   updateMemberRole: async (organizationId, userId, role) => {
     const response = await api.put(`/organizations/${organizationId}/members/${userId}/role`, { role });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Get pending invitations for an organization
+  // Invitations — not cached (dynamic, low read volume)
   getInvitations: async (organizationId, params = {}) => {
     const response = await api.get(`/organizations/${organizationId}/invitations`, { params });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Accept an invitation
   acceptInvitation: async (token) => {
     const response = await api.post('/organizations/invitations/accept', { token });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 };
-

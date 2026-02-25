@@ -1,119 +1,120 @@
 import api from './api';
+import cachedApi from './cachedApi';
 
-const unwrap = (response) => response.data?.data ?? response.data;
+// TTL constants
+const TTL_5M = 5 * 60 * 1000;   // task lists — updated frequently
+const TTL_2M = 2 * 60 * 1000;   // "my tasks" — primary work surface
+
+const unwrap = (data) => data?.data ?? data;
 
 export const taskService = {
-  // Get my tasks filtered by organization
+  // Get my tasks filtered by organization (cached 2 min — primary work surface)
   getMyTasks: async (params = {}) => {
-    const response = await api.get('/tasks/my-tasks', { params });
-    return unwrap(response);
+    const qs = new URLSearchParams(params).toString();
+    const data = await cachedApi.get('/tasks/my-tasks', params, {
+      cacheKey: `tasks:my:${qs}`,
+      ttlMs: TTL_2M,
+    });
+    return unwrap(data);
   },
 
-  // Get task by ID (includes subtasks, updates, comments)
+  // Get task by ID (not cached — detail view, always fetch fresh)
   getTaskById: async (taskId) => {
     const response = await api.get(`/tasks/${taskId}`);
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Get tasks for a project
+  // Get tasks for a project (cached 5 min)
   getProjectTasks: async (projectId, params = {}) => {
-    const response = await api.get(`/projects/${projectId}/tasks`, { params });
-    return unwrap(response);
+    const qs = new URLSearchParams(params).toString();
+    const data = await cachedApi.get(`/projects/${projectId}/tasks`, params, {
+      cacheKey: `tasks:project:${projectId}:${qs}`,
+      ttlMs: TTL_5M,
+    });
+    return unwrap(data);
   },
 
-  // Create task
+  // ── Mutations ─────────────────────────────────────────────────────────────
+
   createTask: async (data) => {
-    const response = await api.post('/tasks', data);
-    return unwrap(response);
+    const result = await cachedApi.post('/tasks', data, {
+      invalidatePrefixes: ['tasks:project:', 'tasks:my:'],
+    });
+    return unwrap(result);
   },
 
-  // Update task
   updateTask: async (taskId, data) => {
-    const response = await api.put(`/tasks/${taskId}`, data);
-    return unwrap(response);
+    const result = await cachedApi.put(`/tasks/${taskId}`, data, {
+      invalidatePrefixes: ['tasks:project:', 'tasks:my:'],
+    });
+    return unwrap(result);
   },
 
-  // Delete task
   deleteTask: async (taskId) => {
-    const response = await api.delete(`/tasks/${taskId}`);
-    return unwrap(response);
+    const result = await cachedApi.delete(`/tasks/${taskId}`, {
+      invalidatePrefixes: ['tasks:project:', 'tasks:my:'],
+    });
+    return unwrap(result);
   },
 
-  // Submit a progress update/report on a task (FieldWorker)
+  // ── Task Updates / Review Chain ───────────────────────────────────────────
+
   submitTaskUpdate: async (taskId, data) => {
     const response = await api.post(`/tasks/${taskId}/updates`, data);
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // ─── REVIEW CHAIN ─────────────────────────────────────────────────────────
-
-  // Step 1 (contracted tasks only): ContractorAdmin approves/rejects
   reviewByContractorAdmin: async (updateId, approved, feedback) => {
-    const response = await api.post(`/tasks/updates/${updateId}/approve-contractor-admin`, {
-      approved,
-      feedback,
-    });
-    return unwrap(response);
+    const response = await api.post(`/tasks/updates/${updateId}/approve-contractor-admin`, { approved, feedback });
+    return unwrap(response.data);
   },
 
-  // Step 2: DepartmentSupervisor approves/rejects
   reviewBySupervisor: async (updateId, approved, feedback) => {
-    const response = await api.post(`/tasks/updates/${updateId}/approve-supervisor`, {
-      approved,
-      feedback,
-    });
-    return unwrap(response);
+    const response = await api.post(`/tasks/updates/${updateId}/approve-supervisor`, { approved, feedback });
+    return unwrap(response.data);
   },
 
-  // Step 3: ProjectAdmin final approval
   reviewByAdmin: async (updateId, approved, feedback) => {
-    const response = await api.post(`/tasks/updates/${updateId}/approve-admin`, {
-      approved,
-      feedback,
-    });
-    return unwrap(response);
+    const response = await api.post(`/tasks/updates/${updateId}/approve-admin`, { approved, feedback });
+    return unwrap(response.data);
   },
 
-  // Mark task as complete (ProjectAdmin/ProjectOwner only)
   markTaskComplete: async (taskId) => {
-    const response = await api.post(`/tasks/${taskId}/complete`);
-    return unwrap(response);
+    const result = await cachedApi.post(`/tasks/${taskId}/complete`, {}, {
+      invalidatePrefixes: ['tasks:project:', 'tasks:my:'],
+    });
+    return unwrap(result);
   },
 
-  // Get pending task updates for review (scoped to current user's role; backend role-filters)
+  // Pending updates — not cached (dynamic review queue)
   getPendingUpdates: async (params = {}) => {
     const response = await api.get('/tasks/pending-updates', { params });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Get all updates submitted by the current user across tasks
   getMySubmittedUpdates: async (params = {}) => {
     const response = await api.get('/tasks/pending-updates', { params });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Get all updates for a specific task
   getTaskUpdates: async (taskId) => {
     const response = await api.get(`/tasks/${taskId}/updates`);
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Get subtasks for a parent task
   getSubtasks: async (taskId) => {
     const response = await api.get(`/tasks/${taskId}/subtasks`);
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Get task comments
   getTaskComments: async (taskId, params = {}) => {
     const response = await api.get(`/tasks/${taskId}/comments`, { params });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 
-  // Add task comment
   addTaskComment: async (taskId, comment) => {
     const response = await api.post(`/tasks/${taskId}/comments`, { comment });
-    return unwrap(response);
+    return unwrap(response.data);
   },
 };
 
