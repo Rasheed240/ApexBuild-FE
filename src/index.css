@@ -28,6 +28,8 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Scale down the entire UI to 80% by default for desktop views */
+    font-size: 14.8px;
   }
 
   @media (max-width: 768px) {
